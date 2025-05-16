@@ -33,19 +33,29 @@ Falcon-VR 因其致力于提供一个易于访问、用户友好的平台，将 
 
 ## Requirements
 ```
-git clone https://github.com/bigict/falcon2.git
+git clone https://github.com/DanFienne/falcon2.git
 ```
 
 ```
-pip install -r requirements.txt
+pip install "fastapi[standard]"
+# openmm
+conda install -c conda-forge openmm
+conda install -c conda-forge pdbfixer
+conda install -c conda-forge pymol-open-source
 ```
 
 ## Quickstart
 ```
 cd server
 uvicorn app:app --host ip_address --port port
+
+example: 
+uvicorn app:app --reload --host 0.0.0.0 --port 9098 --ssl-keyfile server.key --ssl-certfile server.crt
 ```
 使用头盔直接访问 ip_address
+
+功能:
+
 
 ## Citation
 ```
