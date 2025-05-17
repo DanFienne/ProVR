@@ -3,8 +3,8 @@ Contents
 
 - [Overview](#Overview)
 - [Quick Start](#quick-start)
-    - [Installing Falcon2-VR](#installing-siga)
-    - [Running Falcon2-VR](#Running-Falcon2-VR)
+    - [Installing ProVR](#installing-siga)
+    - [Running ProVR](#Running-ProVR)
     - [Implement](#Implement)
 - [Geting Start VR Mode](#Geting-Start-VR-Mode)
     - [Enter VR Scene](#Enter-VR-Scene)
@@ -27,17 +27,17 @@ Contents
 Overview
 ========
 
-Falcon-VR 是一个基于 Three.js 开发的先进蛋白质设计工具，旨在为研究人员和生物学家提供沉浸式的虚拟现实体验。通过利用最新的 WebVR 技术，Falcon-VR 提供了一个功能强大的平台，使用户能够在无限的虚拟环境中直观地设计和可视化蛋白质结构。
+ProVR 是一个基于 Three.js 开发的先进蛋白质设计工具，旨在为研究人员和生物学家提供沉浸式的虚拟现实体验。通过利用最新的 WebVR 技术，ProVR 提供了一个功能强大的平台，使用户能够在无限的虚拟环境中直观地设计和可视化蛋白质结构。
 
 Quick Start
 ===========
 
 
-## Running Falcon2-VR
+## Running ProVR
 
 ### Quickstart
 ```
-cd falcon2/server
+cd ProVR/server
 uvicorn app:app --host ip_address --port port
 ```
 使用VR头盔直接访问 ip_address
