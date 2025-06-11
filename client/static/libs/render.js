@@ -330,18 +330,18 @@ df.dfRender = {
                                 case 'left':
                                     leftObject = leftControllerPointer.pointerObject
                                     break
-                                // case 'right':
-                                //     rightObject = rightControllerPointer.pointerObject
-                                //     break
+                                case 'right':
+                                    rightObject = rightControllerPointer.pointerObject
+                                    break
                             }
                         } else if (inputSource.gamepad) {
                             switch (inputSource.handedness) {
                                 case 'left':
                                     leftObject = leftController
                                     break
-                                // case 'right':
-                                //     rightObject = rightController
-                                //     break
+                                case 'right':
+                                    rightObject = rightController
+                                    break
                             }
                         }
                     });
