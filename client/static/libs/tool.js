@@ -304,7 +304,7 @@ df.tool = {
         }
     },
     changeFrame: function (mol_id, atm_id) {
-        let paths = df.PathList
+        let paths = df.PathList[mol_id];
         for (let index in paths) {
             let path = paths[index];
             let n = w3m.config.smooth_segment % 2 ?
@@ -544,7 +544,7 @@ df.tool = {
         delete df.pdbContent[pdbId];
     },
     initTools: function () {
-        df.PathList = [];
+        df.PathList = {};
         df.SelectedPDBId = null;
         df.pdbId = [];
         df.pdbText = {}

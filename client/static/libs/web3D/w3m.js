@@ -1532,9 +1532,21 @@ w3m.tool = {
                 }
             }
             let frame = [];
-            if (path.length > 2) {
-                df.PathList.push(path);
-                this.naturalFrame(path, frame, mol_id);
+            if (Array.isArray(df.PathList[mol_id]) && df.PathList[mol_id].length > 0) {
+                if (path.length > 2) {
+                    df.PathList[mol_id].push(path);
+                    this.naturalFrame(path, frame, mol_id);
+                } else {
+                    // path 长度不大于 2 的处理逻辑（可选）
+                }
+            } else {
+                // df.PathList[mol_id] 不是数组或为空的处理逻辑
+                // 如果你希望初始化为空数组：
+                df.PathList[mol_id] = [];
+                if (path.length > 2) {
+                    df.PathList[mol_id].push(path);
+                    this.naturalFrame(path, frame, mol_id);
+                }
             }
             switch (rep) {
                 case w3m.CUBE:

@@ -28,10 +28,10 @@ function objectTransform(object, controller, tempMatrix) {
                     } else {
                         console.log(object)
                         df.SELECTED_RESIDUE = object;
-                        df.SELECTED_RESIDUE.visible = true;
+                        df.SELECTED_RESIDUE.visible = false;
                         df.SELECTED_RESIDUE_POS = new THREE.Vector3();
                         df.SELECTED_RESIDUE.controller = controller;
-                        // object.getWorldPosition(df.SELECTED_RESIDUE_POS);
+                        object.getWorldPosition(df.SELECTED_RESIDUE_POS);
                         controller.attach(object);
                     }
                 } else {

@@ -208,6 +208,9 @@ df.drawer = {
         df.GROUP[pdbId][type][chain].add(mesh);
     },
     drawTube: function (path, radius, color, atom, pdbId, type, chain) {
+        console.log(pdbId, atom)
+        console.log(path)
+
         let Catmull = new THREE.CatmullRomCurve3(path);
         let step = path.length - 1;
         let geometry = new THREE.TubeGeometry(Catmull, step, radius, df.config.tubesegment, false);

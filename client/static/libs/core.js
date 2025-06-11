@@ -13,7 +13,7 @@ df = {
     ScoreTemp: 0,
 
     // w3m
-    PathList: [],
+    PathList: {},
     GROUP_VISIBLE: {},
 
     t: false,
@@ -199,7 +199,7 @@ df = {
 
 // config
 df.config = {
-    mainMode: df.BALL_AND_ROD,
+    mainMode: df.CARTOON_SSE,
     hetMode: df.CARTOON_SSE,
     water_sphere_w: 8,
     surface: df.SURFACE,

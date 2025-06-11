@@ -197,20 +197,20 @@ df.dfRender = {
         });
 
         // xr
-        leftController = this.createController(renderer, canon, 1);
-        rightController = this.createController(renderer, canon, 0);
+        leftController = this.createController(renderer, canon, 0);
+        rightController = this.createController(renderer, canon, 1);
         leftRayCaster = new THREE.Raycaster();
         leftRayCaster.camera = camera;
         rightRayCaster = new THREE.Raycaster();
         rightRayCaster.camera = camera;
 
         // Hand
-        leftHand = this.createHandController(renderer, canon, 1);
-        rightHand = this.createHandController(renderer, canon, 0);
+        leftHand = this.createHandController(renderer, canon, 0);
+        rightHand = this.createHandController(renderer, canon, 1);
 
         let controllerModelFactory = new XRControllerModelFactory();
-        leftControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 1);
-        rightControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 0);
+        leftControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 0);
+        rightControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 1);
         const leftControllerPointer = new OculusHandPointerModel(leftHand, leftController);
         const rightControllerPointer = new OculusHandPointerModel(rightHand, rightController);
         leftHand.add(leftControllerPointer);
@@ -287,13 +287,14 @@ df.dfRender = {
                         let y = meshPos.y / ((df.scale));
                         let z = meshPos.z / ((df.scale));
 
-                        // console.log("xyz", x, y, z)
+                        console.log("xyz", x, y, z)
                         // 修改 df.PathList 对应坐标
-                        for (let k in df.PathList[0]) {
-                            if (df.PathList[0][k][0] === meshId) {
-                                df.PathList[0][k][1][0] = parseFloat(x.toFixed(3));
-                                df.PathList[0][k][1][1] = parseFloat(y.toFixed(3));
-                                df.PathList[0][k][1][2] = parseFloat(z.toFixed(3));
+                        let path = df.PathList[df.SelectedPDBId]
+                        for (let k in df.PathList[df.SelectedPDBId][0]) {
+                            if (path[0][k][0] === meshId) {
+                                path[0][k][1][0] = parseFloat(x.toFixed(3));
+                                path[0][k][1][1] = parseFloat(y.toFixed(3));
+                                path[0][k][1][2] = parseFloat(z.toFixed(3));
                             }
                         }
                         // let posDIct = {'matrixWorld': df.SELECTED_RESIDUE.matrixWorld}
@@ -303,8 +304,10 @@ df.dfRender = {
                         df.tool.changeFrame(molId, meshId);
                         df.dfRender.clear(0);
                         // 重新生成 residue 结构
-                        // df.painter.showAllResidues(df.config.mainMode, df.SelectedPDBId);
-                        df.controller.drawGeometry(df.config.mainMode, df.SelectedPDBId);
+
+                        console.log(df.SelectedPDBId);
+                        df.painter.showAllResidues(df.config.mainMode, df.SelectedPDBId);
+                        // df.controller.drawGeometry(df.config.mainMode, df.SelectedPDBId);
                         for (let i in df.GROUP[df.SelectedPDBId]['main']) {
                             let aaa = df.GROUP[df.SelectedPDBId]['main'][i];
                             aaa.scale.set(df.scale, df.scale, df.scale);
