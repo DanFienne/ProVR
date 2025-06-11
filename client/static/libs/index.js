@@ -136,6 +136,10 @@ df.loader.load('4ulh', 'name', function () {
     df.controller.drawGeometry(df.config.mainMode, '4ulh');
     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
 });
+df.loader.load('4ulb', 'name', function () {
+    df.controller.drawGeometry(df.config.mainMode, '4ulb');
+    // df.controller.drawGeometry(df.config.hetMode, '4ulh');
+});
 // df.loader.load('tes2', 'name', function () {
 //     df.controller.drawGeometry(df.config.mainMode, 'tes2');
 //     df.controller.drawGeometry(df.config.hetMode, 'tes2');
