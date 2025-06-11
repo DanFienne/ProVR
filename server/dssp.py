@@ -121,3 +121,5 @@ def get_ss_from_pymol(path):
     cmd.delete("sheets")
     return second_struc + data
 
+if __name__ == '__main__':
+    get_ss_from_pymol()

@@ -161,3 +161,42 @@ async def score(response: HDock):
         return JSONResponse(content={"score": 0})
 
 
+@app.post("/diffuse")
+async def diffuse(response: Design):
+    try:
+        receptor = response.pdb_string
+        # 使用 httpx 异步客户端调用 /infer 接口
+        async with httpx.AsyncClient() as client:
+            infer_response = await client.post(
+                "http://localhost:8000/infer",  # 如果两个接口在同一个服务上
+                json={"pdb_str": receptor}
+            )
+        result = infer_response.json()
+        data = result.get("x0_traj_pdb", "")
+        output_dir = "../client/static/data"
+        model_lines = []
+        model_count = 0
+        for line in data:
+            if line.startswith('MODEL'):
+                model_lines = []
+            elif line.startswith('ENDMDL'):
+                model_lines.append(line)
+                model_count += 1
+                out_path = os.path.join(
+                    output_dir, f'f{model_count:03d}.pdb'
+                )
+                with open(out_path, 'w') as fout:
+                    # 写 header
+                    if header_lines:
+                        fout.writelines(header_lines)
+                    # 写模型本体
+                    fout.writelines(model_lines)
+                model_lines = []
+            else:
+                model_lines.append(line)
+
+
+
+    except Exception as e:
+        print(e)
+        return JSONResponse(content={"score": 0})

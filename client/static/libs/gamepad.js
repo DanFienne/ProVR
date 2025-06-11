@@ -6,9 +6,13 @@ import * as THREE from '../js/three.module.js';
 // var tempMatrix = new THREE.Matrix4();
 
 function objectTransform(object, controller, tempMatrix) {
-    df.SelectedPDBId = object.type === "Group" && object.pdbId
+    // df.SelectedPDBId = object.type === "Group" && object.pdbId
+    //     ? object.pdbId
+    //     : object?.userData?.presentAtom?.pdbId ?? df.SelectedPDBId;
+    df.SelectedPDBId = object.pdbId
         ? object.pdbId
         : object?.userData?.presentAtom?.pdbId ?? df.SelectedPDBId;
+    console.log(df.SelectedPDBId)
     switch (df.selection) {
         case df.drag_residues:
             df.tool.colorIntersectObjectRed(object, 1);
@@ -22,8 +26,9 @@ function objectTransform(object, controller, tempMatrix) {
                     if (df.config.mainMode === df.BALL_AND_ROD) {
                         controller.attach(object);
                     } else {
+                        console.log(object)
                         df.SELECTED_RESIDUE = object;
-                        df.SELECTED_RESIDUE.visible = false
+                        df.SELECTED_RESIDUE.visible = true;
                         df.SELECTED_RESIDUE_POS = new THREE.Vector3();
                         df.SELECTED_RESIDUE.controller = controller;
                         // object.getWorldPosition(df.SELECTED_RESIDUE_POS);
@@ -145,6 +150,7 @@ function onTriggerDown(event, raster, tempMatrix, objects) {
         } else {
             // 拖拽蛋白功能
             let interList = getIntersections(objects, raster, tempMatrix);
+            console.log("interList", interList);
             let intersections = interList[0];
             let controllerTempMatrix = interList[1];
             if (intersections && intersections.length <= 0) {
@@ -363,8 +369,11 @@ function getIntersections(controller, raster, tempMatrix, onMenuButton = false) 
                         console.log(inters)
                         break
                     case df.CARTOON_SSE:
+                        console.log(selectedObject.userData.repType);
+                        console.log(selectedObject.name);
+                        console.log(df.GROUP[selectedPDBId][selectedType][selectedChain]);
                         if (selectedObject.userData.repType === "tube") {
-                            let objects = getChildrenByName(df.GROUP[selectedPDBId][selectedType][selectedChain], selectedObject.name);
+                            let objects = getChildrenByName(df.GROUP[selectedPDBId][selectedType][selectedChain], selectedObject);
                             for (var a = 0; a < objects.length; a++) {
                                 // 更改坐标
                                 // objects[a].group = df.GROUP[selectedPDBId][selectedType][selectedChain];

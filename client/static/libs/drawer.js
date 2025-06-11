@@ -6,63 +6,135 @@ import {camera, canon, scene} from "./render.js";
 const geometryCache = new Map();
 const materialCache = new Map();
 
+
+// 1. 全局缓存：避免重复创建纹理/材质
+df.textSpriteCache = new Map();
+// 2. 存储所有需要更新的球体 + 对应精灵
+df.numberedSpheres = [];
+
+function makeTextSprite(text, params = {}) {
+    const fontface = params.fontface || 'Arial';
+    const fontsize = params.fontsize || 64;
+    const fillColor = params.fillColor || '#ff0000'; // 默认红色填充
+    const strokeColor = params.strokeColor || '#ffffff'; // 默认白色描边
+    const strokeWidth = params.strokeWidth || 6;         // 默认描边宽度
+
+    // 缓存 key
+    const key = [text, fontsize, fillColor, strokeColor, strokeWidth].join('_');
+    if (df.textSpriteCache.has(key)) {
+        return df.textSpriteCache.get(key).clone();
+    }
+
+    // --- 在 Canvas 上绘制文字 + 描边 ---
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, size, size);
+
+    ctx.font = `bold ${fontsize}px ${fontface}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 描边
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = strokeColor;
+    ctx.strokeText(text, size / 2, size / 2);
+
+    // 填充
+    ctx.fillStyle = fillColor;
+    ctx.fillText(text, size / 2, size / 2);
+
+    // --- 生成 THREE.Sprite ---
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: true,
+        depthWrite: false
+    });
+
+    const sprite = new THREE.Sprite(material);
+    df.textSpriteCache.set(key, sprite);
+    return sprite.clone();
+}
+
 df.drawer = {
     drawSphere: function (pdbId, type, chain, point, color, radius, atom, w) {
-
-        // // 使用更低的细分程度（建议8-16）
-        // // const simplifiedW = Math.max(8, Math.min(w, 16));
-        // const simplifiedW = w
-        // // 创建几何体缓存键
-        // const geoKey = `sphere_${radius}_${simplifiedW}`;
-        // // 重复使用几何体
-        // if (!geometryCache.has(geoKey)) {
-        //     geometryCache.set(geoKey, new THREE.SphereGeometry(radius, simplifiedW, simplifiedW));
-        // }
-        // // 创建材质缓存键
-        // const matKey = `lambert_${color.getHex()}`;
-        //
-        // // 重复使用材质
-        // if (!materialCache.has(matKey)) {
-        //     materialCache.set(matKey, new THREE.MeshLambertMaterial({
-        //         color: color,
-        //         specular: new THREE.Color(0x000000),
-        //         reflectivity: 0,
-        //         shininess: 0
-        //     }));
-        // }
-
-        let alpha = 0.5;
-        // 物体表面的反射率，控制镜面反射的强度，值范围一般在0到1之间
-        let beta = 0.5;
-        // 凹凸贴图的缩放因子，控制凹凸的强度
-        let bumpScale = 1;
-        // 镜面高光的强度，值越高，高光范围越小，看起来越集中
-        let specularShininess = Math.pow(2, alpha * 10);
-        // 镜面高光颜色，即光照射到物体表面产生的高光部分的颜色
-        let specularColor = new THREE.Color(beta * 0.2, beta * 0.2, beta * 0.2);
-        let geometry = new THREE.SphereGeometry(radius, w, w);
-        let material = new THREE.MeshLambertMaterial({
-            bumpScale: bumpScale,
-            color: color,
-            // specular: specularColor,
-            // reflectivity: beta,
-            // shininess: specularShininess
-            specular: new THREE.Color(0x000000), // 取消高光
-            reflectivity: 0, // 取消反射
-            shininess: 0 // 取消光泽
-        });
-
-        // let mesh = new THREE.Mesh(geometryCache.get(geoKey), materialCache.get(matKey));
-        let mesh = new THREE.Mesh(geometry, material);
+        // --- 球体 ---
+        const geometry = new THREE.SphereGeometry(radius, w, w);
+        const material = new THREE.MeshLambertMaterial({color: color});
+        const mesh = new THREE.Mesh(geometry, material);
         mesh.name = df.tool.atomCaId(atom);
-        mesh.danfeng = 1;
         mesh.position.copy(point);
-        mesh.userData = {
-            presentAtom: atom
-        };
-        // het
-        df.GROUP[pdbId][type][chain].add(mesh);
+        mesh.userData = {presentAtom: atom};
+        const group = df.GROUP[pdbId][type][chain];
+        group.add(mesh);
+
+        if (atom.id === atom.caid) {
+            // 2) 计算互补色
+            const sphereColor = new THREE.Color(color);
+            const invColor = new THREE.Color(
+                1 - sphereColor.r,
+                1 - sphereColor.g,
+                1 - sphereColor.b
+            );
+            const fillColor = '#' + invColor.getHexString();
+            // 根据互补色亮度（luminance），选择黑或白描边
+            // const lum = invColor.getLuminance();
+            const strokeColor = '#000000';
+
+            // 2) 文本精灵
+            const sprite = makeTextSprite(atom.resId.toString(), {
+                fontsize: 64,
+                fillColor: fillColor,
+                strokeColor: strokeColor,
+                strokeWidth: 6
+            });
+            const scale = radius * 1.2;
+            // sprite.scale.set(scale, scale, 1);
+            // 初始位置放到球心，后续在渲染循环中更新到表面
+            sprite.position.copy(point);
+            group.add(sprite);
+            // 缓存待更新
+            df.numberedSpheres.push({mesh, sprite, radius});
+        }
     },
+    // drawSphere: function (pdbId, type, chain, point, color, radius, atom, w) {
+    //     let alpha = 0.5;
+    //     // 物体表面的反射率，控制镜面反射的强度，值范围一般在0到1之间
+    //     let beta = 0.5;
+    //     // 凹凸贴图的缩放因子，控制凹凸的强度
+    //     let bumpScale = 1;
+    //     // 镜面高光的强度，值越高，高光范围越小，看起来越集中
+    //     let specularShininess = Math.pow(2, alpha * 10);
+    //     // 镜面高光颜色，即光照射到物体表面产生的高光部分的颜色
+    //     let specularColor = new THREE.Color(beta * 0.2, beta * 0.2, beta * 0.2);
+    //     let geometry = new THREE.SphereGeometry(radius, w, w);
+    //     let material = new THREE.MeshLambertMaterial({
+    //         bumpScale: bumpScale,
+    //         color: color,
+    //         // specular: specularColor,
+    //         // reflectivity: beta,
+    //         // shininess: specularShininess
+    //         // specular: new THREE.Color(0x000000), // 取消高光
+    //         // reflectivity: 0, // 取消反射
+    //         // shininess: 0 // 取消光泽
+    //     });
+    //
+    //     // let mesh = new THREE.Mesh(geometryCache.get(geoKey), materialCache.get(matKey));
+    //     let mesh = new THREE.Mesh(geometry, material);
+    //     mesh.name = df.tool.atomCaId(atom);
+    //     mesh.danfeng = 1;
+    //     mesh.position.copy(point);
+    //     mesh.userData = {
+    //         presentAtom: atom
+    //     };
+    //     // het
+    //     df.GROUP[pdbId][type][chain].add(mesh);
+    // },
     // drawStick: function (pdbId, type, chain, start, end, radius, color, atom) {
     //     // 1. 几何体预处理
     //     const segments = df.config.stick_radius;
@@ -272,7 +344,7 @@ df.drawer = {
 
         let geometry = new THREE.CircleGeometry(0.1, 32);
         let material = new THREE.MeshBasicMaterial({
-            color: 0xffffff, // 白色
+            color: 0x000000, // 白色
             transparent: true, // 设置材质为半透明
             opacity: 0.5, // 设置透明度
             map: texture

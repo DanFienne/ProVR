@@ -135,7 +135,97 @@ function submitAlign(data, url, ligand) {
     });
 }
 
+async function waitIfPaused() {
+    if (df.isPaused) {
+        await new Promise(resume => {
+            // 挂到同一个 _resumeResolve 上
+            const old = df._resumeResolve;
+            df._resumeResolve = () => {
+                if (old) old();
+                resume();
+            };
+        });
+    }
+}
+
+async function loadAllPDBs() {
+    let previousGroup = null;
+    let previousPDBId = null;
+    for (const param of df.pdbObjects) {
+        await waitIfPaused();
+        // 加载当前 PDB 并显示
+        await new Promise((resolve) => {
+            df.loader.load(param, 'name', function () {
+                Promise.all([
+                    df.controller.drawGeometry(df.config.mainMode, param),
+                    // df.controller.drawGeometry(df.config.hetMode, param)
+                ]).then(() => {
+                    df.SelectedPDBId = param;
+
+                    const group = df.GROUP[df.SelectedPDBId];
+                    // 遍历并缩放所有对象，并设置为可见
+                    let list = []
+                    for (let index in group) {
+                        for (let i in group[index]) {
+                            let obj = group[index][i];
+                            list.push(obj);
+                            obj.scale.set(df.scale, df.scale, df.scale);
+                            obj.visible = true;
+                            if (obj.surface) {
+                                obj.surface.scale.set(df.scale, df.scale, df.scale);
+                                obj.surface.visible = true;
+                            }
+                        }
+                    }
+                    if (param === 'f500') {
+                        df.tool.vrCameraCenter(canon, camera, list);
+                    }
+                    // 更新当前 group 为 previous
+                    if (previousGroup && previousPDBId) {
+                        df.tool.clearToolsId(previousPDBId)
+                    }
+                    previousGroup = group;
+                    previousPDBId = param;
+
+                    // 等待几秒再加载下一个
+                    setTimeout(() => {
+                        resolve();
+                    }, 20); // 显示 3 秒
+
+                });
+            });
+        });
+    }
+    // 最后一个 group 不删除（可选）
+    // 如果你想最后一个也删除，加上：
+    // if (previousGroup && previousPDBId) {
+    //     disposeGroup(previousGroup);
+    //     delete df.GROUP[previousPDBId];
+    // }
+}
+
+
 df.actionManager = {
+    diffuse: function () {
+        df.actionManager.closeMenu();
+        df.config.mainMode = df.BALL_AND_ROD;
+        df.w3m.config.color_mode_main = 607;
+        df.scale = 0.2;
+        df.tool.clearTools(2);
+
+        let url = window.location.href + 'diffuse';
+        let data = {
+            'pdb_string': df.pdbText['4ulh'],
+        };
+        // submitAlign(data, url, df.ALIGN_LIGAND);
+        data = JSON.stringify(data);
+        delete df.w3m.mol['4ulh'];
+        df.api.apiRequest(url, data, (response) => {
+            loadAllPDBs();
+        });
+
+        // loadAllPDBs();
+    },
     closeMenu: function () {
         df.showMenu = false;
         df.GROUP['menu'].visible = df.showMenu;
@@ -147,6 +237,7 @@ df.actionManager = {
     // drag Action
     zoomAction: function () {
         df.tool.initPDBView(df.SelectedPDBId);
+        df.actionManager.closeMenu();
     },
     dragAction: function (select_type) {
         // 切换为 drag mode
@@ -270,129 +361,32 @@ df.actionManager = {
 
     loadFileAction: function (param) {
         df.tool.clearTools(2);
-        if (param === 'easy') {
-            // design mode
-            df.isScore = true;
-            df.ALIGN_RECEPTOR = "1jy6"
-            df.ALIGN_LIGAND = "1jy1";
-            let param1 = "1jy6"
-            df.loader.load(param1, 'name', function () {
-                Promise.all([
-                    df.controller.drawGeometry(df.config.mainMode, param1),
-                    // df.controller.drawGeometry(df.config.hetMode, param1)
-                ]).then(() => {
-                    df.SelectedPDBId = param1;
-                    df.scale = 0.01;
-                    for (let index in df.GROUP[df.SelectedPDBId]) {
-                        for (let i in df.GROUP[df.SelectedPDBId][index]) {
-                            let aaa = df.GROUP[df.SelectedPDBId][index][i];
-                            aaa.scale.set(df.scale, df.scale, df.scale);
-                            if (aaa.surface) {
-                                let bbb = aaa.surface;
-                                bbb.scale.set(df.scale, df.scale, df.scale);
-                            }
-                            // df.tool.vrCameraCenter(canon, camera, aaa);
-                            // aaa.visible = false;
+        df.isScore = false;
+        df.loader.load(param, 'name', function () {
+            Promise.all([
+                df.controller.drawGeometry(df.config.mainMode, param),
+                df.controller.drawGeometry(df.config.hetMode, param)
+            ]).then(() => {
+                df.SelectedPDBId = param;
+                df.scale = 0.005;
+                let list = []
+                for (let index in df.GROUP[df.SelectedPDBId]) {
+                    for (let i in df.GROUP[df.SelectedPDBId][index]) {
+                        console.log(index)
+                        let aaa = df.GROUP[df.SelectedPDBId][index][i];
+                        list.push(aaa);
+                        console.log(i)
+                        aaa.scale.set(df.scale, df.scale, df.scale);
+                        if (aaa.surface) {
+                            let bbb = aaa.surface;
+                            bbb.scale.set(df.scale, df.scale, df.scale);
                         }
-                    } // 等两个绘制都完成后执行
-                })
-            });
-            let param2 = "1jy1";
-            df.loader.load(param2, 'name', function () {
-                Promise.all([
-                    df.controller.drawGeometry(df.config.mainMode, param2),
-                    // df.controller.drawGeometry(df.config.hetMode, param)
-                ]).then(() => {
-                    df.SelectedPDBId = param2;
-                    df.scale = 0.01;
-                    for (let index in df.GROUP[df.ALIGN_LIGAND]) {
-                        for (let i in df.GROUP[df.ALIGN_LIGAND][index]) {
-                            let aaa = df.GROUP[df.ALIGN_LIGAND][index][i];
-                            aaa.scale.set(df.scale, df.scale, df.scale);
-                            if (aaa.surface) {
-                                let bbb = aaa.surface;
-                                bbb.scale.set(df.scale, df.scale, df.scale);
-                            }
-                            df.tool.vrCameraCenter(canon, camera, aaa);
-                        }
-                    } // 等两个绘制都完成后执行
-                })
-            });
-        } else if (param === 'hard') {
-            df.ALIGN_RECEPTOR = "5da5"
-            df.ALIGN_LIGAND = "5da1";
-            // design mode
-            df.isScore = true;
-            let param1 = "5da5"
-            df.loader.load(param1, 'name', function () {
-                Promise.all([
-                    df.controller.drawGeometry(df.config.mainMode, param1),
-                    // df.controller.drawGeometry(df.config.hetMode, param1)
-                ]).then(() => {
-                    df.SelectedPDBId = param1;
-                    df.scale = 0.005;
-                    for (let index in df.GROUP[df.SelectedPDBId]) {
-                        for (let i in df.GROUP[df.SelectedPDBId][index]) {
-                            let aaa = df.GROUP[df.SelectedPDBId][index][i];
-                            aaa.scale.set(df.scale, df.scale, df.scale);
-                            if (aaa.surface) {
-                                let bbb = aaa.surface;
-                                bbb.scale.set(df.scale, df.scale, df.scale);
-                            }
-                            // df.tool.vrCameraCenter(canon, camera, aaa);
-                            // aaa.visible = false;
-                        }
-                    } // 等两个绘制都完成后执行
-                })
-            });
 
-            let param2 = "5da1";
-            df.loader.load(param2, 'name', function () {
-                Promise.all([
-                    df.controller.drawGeometry(df.config.mainMode, param2),
-                    // df.controller.drawGeometry(df.config.hetMode, param)
-                ]).then(() => {
-                    df.SelectedPDBId = param2;
-                    df.scale = 0.005;
-                    console.log(df.scale)
-                    for (let index in df.GROUP[df.SelectedPDBId]) {
-                        for (let i in df.GROUP[df.SelectedPDBId][index]) {
-                            let aaa = df.GROUP[df.SelectedPDBId][index][i];
-                            aaa.scale.set(df.scale, df.scale, df.scale);
-                            if (aaa.surface) {
-                                let bbb = aaa.surface;
-                                bbb.scale.set(df.scale, df.scale, df.scale);
-                            }
-                            df.tool.vrCameraCenter(canon, camera, aaa);
-                        }
-                    } // 等两个绘制都完成后执行
-                })
-            });
-        } else {
-            df.isScore = false;
-            df.loader.load(param, 'name', function () {
-                Promise.all([
-                    df.controller.drawGeometry(df.config.mainMode, param),
-                    df.controller.drawGeometry(df.config.hetMode, param)
-                ]).then(() => {
-                    df.SelectedPDBId = param;
-                    df.scale = 0.005;
-                    for (let index in df.GROUP[df.SelectedPDBId]) {
-                        for (let i in df.GROUP[df.SelectedPDBId][index]) {
-                            console.log(index)
-                            let aaa = df.GROUP[df.SelectedPDBId][index][i];
-                            console.log(i)
-                            aaa.scale.set(df.scale, df.scale, df.scale);
-                            if (aaa.surface) {
-                                let bbb = aaa.surface;
-                                bbb.scale.set(df.scale, df.scale, df.scale);
-                            }
-                            df.tool.vrCameraCenter(canon, camera, aaa);
-                        }
-                    } // 等两个绘制都完成后执行
-                })
-            });
-        }
+                    }
+                } // 等两个绘制都完成后执行
+                df.tool.vrCameraCenter(canon, camera, list);
+            })
+        });
         df.actionManager.closeMenu();
     },
     // clear
@@ -404,17 +398,19 @@ df.actionManager = {
     scaleAction: function (param) {
         df.scale = param;
         console.log(df.scale)
+        let list = []
         for (let index in df.GROUP[df.SelectedPDBId]) {
             for (let i in df.GROUP[df.SelectedPDBId][index]) {
                 let aaa = df.GROUP[df.SelectedPDBId][index][i];
+                list.push(aaa);
                 aaa.scale.set(df.scale, df.scale, df.scale);
                 if (aaa.surface) {
                     let bbb = aaa.surface;
                     bbb.scale.set(df.scale, df.scale, df.scale);
                 }
-                df.tool.vrCameraCenter(canon, camera, aaa);
             }
-        }
+        } // 等两个绘制都完成后执行
+        df.tool.vrCameraCenter(canon, camera, list);
         df.actionManager.closeMenu();
     }
 }
@@ -697,6 +693,13 @@ function createMenuButton(group) {
         label: "Scale",
         length: 2,
     });
+    let diffuse = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "diffuse",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "diffuse",
+        length: 2,
+        action: df.actionManager.diffuse,
+    });
 
     toolkits.subMenu = new SubMenu({
         buttons: [
@@ -705,6 +708,7 @@ function createMenuButton(group) {
             // energy,
             // refineStructure,
             scale,
+            diffuse,
         ],
         parent: toolkits
     });

@@ -35,8 +35,9 @@ df.dfRender = {
     vrScene: function () {
         let newScene = new THREE.Scene();
         // 背景: 深蓝色
-        newScene.background = new THREE.Color(0x17202A);
-        // newScene.background = new THREE.Color(0xcccccc);
+        // newScene.background = new THREE.Color(0x0000e0);
+        newScene.background = new THREE.Color(0xffffff);
+        // newScene.background = new THREE.Color(0x888888);
         // 创建一个半球光源 HemisphereLight(skyColor, groundColor)
         const hemisphereLight = new THREE.HemisphereLight(0x74B9FF, 0x2C3E50);
         newScene.add(hemisphereLight);
@@ -47,12 +48,12 @@ df.dfRender = {
         // newScene.add(gridHelper);
         let grids = []
         // 添加各个方向的网格
-        createGrid(size, divisions, new THREE.Vector3(0, 0, 0), new THREE.Euler(0, 0, 0), grids, newScene);
-        createGrid(size, divisions, new THREE.Vector3(0, size, 0), new THREE.Euler(0, 0, 0), grids, newScene);
-        createGrid(size, divisions, new THREE.Vector3(size / 2, size / 2, 0), new THREE.Euler(0, 0, Math.PI / 2), grids, newScene);
-        createGrid(size, divisions, new THREE.Vector3(-size / 2, size / 2, 0), new THREE.Euler(0, 0, -Math.PI / 2), grids, newScene);
-        createGrid(size, divisions, new THREE.Vector3(0, size / 2, size / 2), new THREE.Euler(-Math.PI / 2, 0, 0), grids, newScene);
-        createGrid(size, divisions, new THREE.Vector3(0, size / 2, -size / 2), new THREE.Euler(Math.PI / 2, 0, 0), grids, newScene);
+        // createGrid(size, divisions, new THREE.Vector3(0, 0, 0), new THREE.Euler(0, 0, 0), grids, newScene);
+        // createGrid(size, divisions, new THREE.Vector3(0, size, 0), new THREE.Euler(0, 0, 0), grids, newScene);
+        // createGrid(size, divisions, new THREE.Vector3(size / 2, size / 2, 0), new THREE.Euler(0, 0, Math.PI / 2), grids, newScene);
+        // createGrid(size, divisions, new THREE.Vector3(-size / 2, size / 2, 0), new THREE.Euler(0, 0, -Math.PI / 2), grids, newScene);
+        // createGrid(size, divisions, new THREE.Vector3(0, size / 2, size / 2), new THREE.Euler(-Math.PI / 2, 0, 0), grids, newScene);
+        // createGrid(size, divisions, new THREE.Vector3(0, size / 2, -size / 2), new THREE.Euler(Math.PI / 2, 0, 0), grids, newScene);
         return newScene;
     },
     vrCamera: function () {
@@ -116,9 +117,11 @@ df.dfRender = {
         geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, -1], 3));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute([0.5, 0.5, 0.5, 0, 0, 0], 3));
         let material = new THREE.LineBasicMaterial({
+            color: 0x000000,
             vertexColors: true,
-            // linewidth: 100,
-            blending: THREE.AdditiveBlending
+            linewidth: 1,
+            toneMapped: false
+            // blending: THREE.AdditiveBlending
         });
         let line = new THREE.Line(geometry, material);
         line.name = 'line';
@@ -170,20 +173,22 @@ df.dfRender = {
         let isImmersive = false;
         renderer.xr.addEventListener('sessionstart', () => {
             // df.scale = 0.1;
-            df.scale = 0.02;
+            // df.scale = 0.005;
+            let list = []
             for (let argumentsKey in df.pdbText) {
                 for (let index in df.GROUP[argumentsKey]) {
                     for (let i in df.GROUP[argumentsKey][index]) {
                         let aaa = df.GROUP[argumentsKey][index][i];
+                        list.push(aaa);
                         aaa.scale.set(df.scale, df.scale, df.scale);
                         if (aaa.surface) {
                             let bbb = aaa.surface;
                             bbb.scale.set(df.scale, df.scale, df.scale);
                         }
-                        df.tool.vrCameraCenter(canon, camera, aaa);
                     }
                 }
             }
+            df.tool.vrCameraCenter(canon, camera, list);
 
             isImmersive = true;
         });
@@ -221,10 +226,10 @@ df.dfRender = {
             let leftTempMatrix = new THREE.Matrix4();
             // df.tool.initPDBView(df.SelectedPDBId);
             const inputSources = renderer.xr.getSession().inputSources;
-            if (inputSources && inputSources[1]) {
-                if (inputSources[1].hand && (inputSources[1].handedness === 'left')) {
+            if (inputSources && inputSources[0]) {
+                if (inputSources[0].hand && (inputSources[0].handedness === 'left')) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, leftControllerPointer.pointerObject);
-                } else if (inputSources[1].gamepad) {
+                } else if (inputSources[0].gamepad) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, event.target);
                 }
             }
@@ -233,12 +238,12 @@ df.dfRender = {
         rightController.addEventListener('selectstart', function (event) {
             let rightTempMatrix = new THREE.Matrix4();
             const inputSources = renderer.xr.getSession().inputSources;
-            if (inputSources && inputSources[0] && (inputSources[0].handedness === 'right')) {
-                if (inputSources[0].hand) {
+            if (inputSources && inputSources[1] && (inputSources[1].handedness === 'right')) {
+                if (inputSources[1].hand) {
                     // leftLine.visible = false;
                     // rightLine.visible = false;
                     onTriggerDown(event, rightRayCaster, rightTempMatrix, rightControllerPointer.pointerObject);
-                } else if (inputSources[0].gamepad) {
+                } else if (inputSources[1].gamepad) {
                     // leftLine.visible = true;
                     // rightLine.visible = true;
                     onTriggerDown(event, rightRayCaster, rightTempMatrix, event.target);
@@ -267,6 +272,7 @@ df.dfRender = {
             if (df.selection === df.select_residue) {
                 if (df.SELECTED_RESIDUE.type === df.MeshType) {
                     if (df.config.mainMode === df.CARTOON_SSE) {
+
                         // 根据 select residue 获取 residue信息
                         let meshInfo = df.SELECTED_RESIDUE.userData.presentAtom
                         let meshId = meshInfo.id;
@@ -324,18 +330,18 @@ df.dfRender = {
                                 case 'left':
                                     leftObject = leftControllerPointer.pointerObject
                                     break
-                                case 'right':
-                                    rightObject = rightControllerPointer.pointerObject
-                                    break
+                                // case 'right':
+                                //     rightObject = rightControllerPointer.pointerObject
+                                //     break
                             }
                         } else if (inputSource.gamepad) {
                             switch (inputSource.handedness) {
                                 case 'left':
                                     leftObject = leftController
                                     break
-                                case 'right':
-                                    rightObject = rightController
-                                    break
+                                // case 'right':
+                                //     rightObject = rightController
+                                //     break
                             }
                         }
                     });
@@ -389,6 +395,46 @@ df.dfRender = {
                     df.rightRing.visible = false;
                 }
             }
+
+
+            // 1) 检测手柄按键
+            const session = renderer.xr.getSession();
+            if (session) {
+                for (const source of session.inputSources) {
+                    if (source.gamepad) {
+                        const gp = source.gamepad;
+                        // 以 buttons[3] 为例，检测从松开到按下的那一刻
+                        const btn = gp.buttons[1];
+                        if (btn.pressed && !btn._prev) {
+                            // 底部按键被一次按下
+                            togglePause();
+                        }
+                        btn._prev = btn.pressed;
+                    }
+                }
+            }
+
+            // 1) 拿到摄像机世界坐标
+            // 获得摄像机世界坐标
+            const camPos = new THREE.Vector3();
+            camera.getWorldPosition(camPos);
+
+            df.numberedSpheres.forEach(item => {
+                const {mesh, sprite, radius} = item;
+                // 1) 计算球心世界坐标
+                const center = new THREE.Vector3();
+                mesh.getWorldPosition(center);
+                // 2) 朝向摄像机的方向
+                const dir = new THREE.Vector3().subVectors(camPos, center).normalize();
+                // 3) 在球表面稍外侧的世界坐标
+                const worldPos = center.clone().addScaledVector(dir, radius + 0.01);
+                // 4) 把 worldPos 转成精灵父对象（group）本地坐标
+                sprite.parent.worldToLocal(worldPos);
+                // 5) 赋值给 sprite.position
+                sprite.position.copy(worldPos);
+                // THREE.Sprite 会自动面向摄像机
+            });
+
             camera.updateProjectionMatrix();
             renderer.render(scene, camera);
         }
@@ -455,6 +501,25 @@ df.dfRender = {
         }
         df.pdbText[pdbId] = PDBFormat;
         return PDBFormat;
+    }
+}
+
+function togglePause() {
+    if (!df.isPaused) {
+        // 由“运行”=>“暂停”
+        df.isPaused = true;
+        // 创建一个新的 Promise，等到 resume() 才 resolve
+        const p = new Promise(res => {
+            df._resumeResolve = res;
+        });
+        return p; // 可选：让调用者拿到这个 Promise
+    } else {
+        // 由“暂停”=>“运行”
+        df.isPaused = false;
+        if (df._resumeResolve) {
+            df._resumeResolve();     // 解除 loadAllPDBs 中的 await
+            df._resumeResolve = null;
+        }
     }
 }
 

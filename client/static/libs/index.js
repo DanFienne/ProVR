@@ -117,22 +117,30 @@ const loader = new OBJLoader();
 // });
 
 
-// df.loader.load('4eul', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, '4eul');
-//     df.controller.drawGeometry(df.config.hetMode, '4eul');
+// 假设 df 是全局对象，包含 loader, controller, config 等
+// 每个 PDB 的几何体将存储在一个对象中
+// pdbObjects = {};
+
+df.pdbObjects = [];
+for (let i = 500; i >= 1; i--) {
+  df.pdbObjects.push('f' + i.toString().padStart(3, '0'));
+}
+
+
+// loadAllPDBs();
+
+// 依次显示每个结构
+
+
+df.loader.load('4ulh', 'name', function () {
+    df.controller.drawGeometry(df.config.mainMode, '4ulh');
+    // df.controller.drawGeometry(df.config.hetMode, '4ulh');
+});
+// df.loader.load('tes2', 'name', function () {
+//     df.controller.drawGeometry(df.config.mainMode, 'tes2');
+//     df.controller.drawGeometry(df.config.hetMode, 'tes2');
 // });
-// df.loader.load('she2', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'she2');
-//     df.controller.drawGeometry(df.config.hetMode, 'she2');
-// });
-// df.loader.load('tur2', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'tur2');
-//     df.controller.drawGeometry(df.config.hetMode, 'tur2');
-// });
-// df.loader.load('gly1', 'name', function () {
-//     df.controller.drawGeometry(df.BALL_AND_ROD, 'gly1');
-//     df.controller.drawGeometry(df.BALL_AND_ROD, 'gly1');
-// });
+
 
 //
 // function normalizeGroup(group) {

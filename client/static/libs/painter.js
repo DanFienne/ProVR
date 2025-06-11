@@ -2,6 +2,7 @@ import {df} from './core.js';
 import {w3m} from "./web3D/w3m.js";
 import * as THREE from '../js/three.module.js';
 import {Group} from "../js/three.module.js";
+import {mergeGeometries} from "../js/utils/BufferGeometryUtils.js";
 
 df.painter = {
     showHet: function (type, pdbId) {
@@ -208,38 +209,200 @@ df.painter = {
             w);
         df.GROUP[pdbId][type][atom.chainName].children[df.GROUP[pdbId][type][atom.chainName].children.length - 1].visible = true;
     },
+    // showBallRodByResidue: function (pdbId, chainId, resId) {
+    //     let w = df.config.stick_sphere_w;
+    //     let radius = df.config.ball_rod_radius;
+    //     let residue = w3m.mol[pdbId].residueData[chainId][resId];
+    //     let lines = residue.lines;
+    //     // 防止重复绘制
+    //     let history = {};
+    //     for (let i = 0; i < lines.length; i++) {
+    //         let ids = lines[i];
+    //         let startAtom = df.tool.getMainAtom(pdbId, ids[0]);
+    //         let endAtom = df.tool.getMainAtom(pdbId, ids[1]);
+    //         if (!startAtom.caid) {
+    //             startAtom.caid = residue.caid;
+    //             endAtom.caid = residue.caid;
+    //         }
+    //         if (history[startAtom.id] === undefined) {
+    //             this.drawSphereByResidue(pdbId, 'main', startAtom, radius, 0.2, w);
+    //             history[startAtom.id] = 1;
+    //         }
+    //         if (history[endAtom.id] === undefined) {
+    //             this.drawSphereByResidue(pdbId, 'main', endAtom, radius, 0.2, w);
+    //             history[endAtom.id] = 1;
+    //         }
+    //         let midPoint = df.tool.midPoint(startAtom.posCentered, endAtom.posCentered);
+    //         let distance = startAtom.posCentered.distanceTo(endAtom.posCentered);
+    //         if (distance < 3) {
+    //             df.drawer.drawStick(pdbId, 'main', startAtom.chainName, startAtom.posCentered, midPoint, radius, startAtom.color, startAtom);
+    //             df.GROUP[pdbId]['main'][startAtom.chainName].children[df.GROUP[pdbId]['main'][startAtom.chainName].children.length - 1].visible = true;
+    //             df.drawer.drawStick(pdbId, 'main', endAtom.chainName, midPoint, endAtom.posCentered, radius, endAtom.color, endAtom);
+    //             df.GROUP[pdbId]['main'][endAtom.chainName].children[df.GROUP[pdbId]['main'][endAtom.chainName].children.length - 1].visible = true;
+    //         }
+    //     }
+    // },
+
+
     showBallRodByResidue: function (pdbId, chainId, resId) {
-        let w = df.config.stick_sphere_w;
-        let radius = df.config.ball_rod_radius;
-        let residue = w3m.mol[pdbId].residueData[chainId][resId];
-        let lines = residue.lines;
-        // 防止重复绘制
-        let history = {};
+        // const w = df.config.stick_sphere_w;
+        const radius = df.config.ball_rod_radius;
+        const stickRes = df.config.stick_radius;
+        const mergeOn = false
+
+        // 目标组
+        const group = df.GROUP[pdbId]['main'][chainId];
+        // 先清空旧子对象
+        // group.clear();
+
+        if (!mergeOn) {
+            let w = df.config.stick_sphere_w;
+            let radius = df.config.ball_rod_radius;
+            let residue = w3m.mol[pdbId].residueData[chainId][resId];
+            let lines = residue.lines;
+            // 防止重复绘制
+            let history = {};
+            for (let i = 0; i < lines.length; i++) {
+                let ids = lines[i];
+                let startAtom = df.tool.getMainAtom(pdbId, ids[0]);
+                let endAtom = df.tool.getMainAtom(pdbId, ids[1]);
+                if (!startAtom.caid) {
+                    startAtom.caid = residue.caid;
+                    endAtom.caid = residue.caid;
+                }
+                if (history[startAtom.id] === undefined) {
+                    this.drawSphereByResidue(pdbId, 'main', startAtom, radius, 0.2, w);
+                    history[startAtom.id] = 1;
+                }
+                if (history[endAtom.id] === undefined) {
+                    this.drawSphereByResidue(pdbId, 'main', endAtom, radius, 0.2, w);
+                    history[endAtom.id] = 1;
+                }
+                let midPoint = df.tool.midPoint(startAtom.posCentered, endAtom.posCentered);
+                let distance = startAtom.posCentered.distanceTo(endAtom.posCentered);
+                if (distance < 3) {
+                    df.drawer.drawStick(pdbId, 'main', startAtom.chainName, startAtom.posCentered, midPoint, radius, startAtom.color, startAtom);
+                    df.GROUP[pdbId]['main'][startAtom.chainName].children[df.GROUP[pdbId]['main'][startAtom.chainName].children.length - 1].visible = true;
+                    df.drawer.drawStick(pdbId, 'main', endAtom.chainName, midPoint, endAtom.posCentered, radius, endAtom.color, endAtom);
+                    df.GROUP[pdbId]['main'][endAtom.chainName].children[df.GROUP[pdbId]['main'][endAtom.chainName].children.length - 1].visible = true;
+                }
+            }
+            return;
+        }
+
+// 配置参数
+        const w = df.config.stick_sphere_w;    // 球体分段数
+        const stickRadial = df.config.stick_radius;      // 圆柱径向分段数
+        const rodRadius = df.config.ball_rod_radius;   // 圆柱半径（与 drawStick 保持一致）
+        const sphereScale = 0.2;                         // drawSphereByResidue 中的 x 缩放因子
+
+        // 按颜色分组存几何体
+        const sphereGroups = new Map();  // colorHex -> [SphereGeometry, …]
+        const stickGroups = new Map();  // colorHex -> [CylinderGeometry, …]
+
+        function pushGeom(map, colorHex, geom) {
+            if (!map.has(colorHex)) map.set(colorHex, []);
+            map.get(colorHex).push(geom);
+        }
+
+        // 矩阵 & 向量复用
+        const tmpMat4 = new THREE.Matrix4();
+        const up = new THREE.Vector3(0, 1, 0);
+
+        // 合并工具（项目中如有 mergeGeometries 也可以替换）
+        // const BufferGeometryUtils = THREE.BufferGeometryUtils || {
+        //     mergeBufferGeometries: mergeGeometries
+        // };
+
+        // 取出这一残基的连线数据
+        const residue = w3m.mol[pdbId].residueData[chainId][resId];
+        const lines = residue.lines;
+        const history = {};  // 防止重复画同一个球
+
         for (let i = 0; i < lines.length; i++) {
-            let ids = lines[i];
-            let startAtom = df.tool.getMainAtom(pdbId, ids[0]);
-            let endAtom = df.tool.getMainAtom(pdbId, ids[1]);
-            if (!startAtom.caid) {
-                startAtom.caid = residue.caid;
-                endAtom.caid = residue.caid;
-            }
-            if (history[startAtom.id] === undefined) {
-                this.drawSphereByResidue(pdbId, 'main', startAtom, radius, 0.2, w);
-                history[startAtom.id] = 1;
-            }
-            if (history[endAtom.id] === undefined) {
-                this.drawSphereByResidue(pdbId, 'main', endAtom, radius, 0.2, w);
-                history[endAtom.id] = 1;
-            }
-            let midPoint = df.tool.midPoint(startAtom.posCentered, endAtom.posCentered);
-            let distance = startAtom.posCentered.distanceTo(endAtom.posCentered);
-            if (distance < 3) {
-                df.drawer.drawStick(pdbId, 'main', startAtom.chainName, startAtom.posCentered, midPoint, radius, startAtom.color, startAtom);
-                df.GROUP[pdbId]['main'][startAtom.chainName].children[df.GROUP[pdbId]['main'][startAtom.chainName].children.length - 1].visible = true;
-                df.drawer.drawStick(pdbId, 'main', endAtom.chainName, midPoint, endAtom.posCentered, radius, endAtom.color, endAtom);
-                df.GROUP[pdbId]['main'][endAtom.chainName].children[df.GROUP[pdbId]['main'][endAtom.chainName].children.length - 1].visible = true;
+            const [i0, i1] = lines[i];
+            const a0 = df.tool.getMainAtom(pdbId, i0);
+            const a1 = df.tool.getMainAtom(pdbId, i1);
+
+            // —— 球体 ——
+            [a0, a1].forEach(atom => {
+                if (!history[atom.id]) {
+                    const hex = new THREE.Color(atom.color).getHexString();
+                    const r = atom.radius * sphereScale;
+                    const sph = new THREE.SphereGeometry(r, w, w);
+                    // 平移到 atom 位置
+                    sph.applyMatrix4(
+                        tmpMat4.makeTranslation(
+                            atom.posCentered.x,
+                            atom.posCentered.y,
+                            atom.posCentered.z
+                        )
+                    );
+                    pushGeom(sphereGroups, hex, sph);
+                    history[atom.id] = true;
+                }
+            });
+
+            // —— 棍体 ——
+            // 方向向量 & 长度
+            const dir = new THREE.Vector3().subVectors(a1.posCentered, a0.posCentered);
+            const len = dir.length();
+            if (len < 3) {
+                // 在原点沿 Y 轴建一根高度为 len 的圆柱，中心在原点
+                const cyl = new THREE.CylinderGeometry(
+                    rodRadius,     // 顶面半径
+                    rodRadius,     // 底面半径
+                    len,           // 高度
+                    stickRadial,   // 径向分段
+                    1,             // 高度分段
+                    false
+                );
+                // 1) 用四元数把 Y 轴对齐到 dir
+                const quat = new THREE.Quaternion()
+                    .setFromUnitVectors(up, dir.clone().normalize());
+                cyl.applyQuaternion(quat);
+
+                // 2) 移到两点中点
+                const mid = new THREE.Vector3()
+                    .addVectors(a0.posCentered, a1.posCentered)
+                    .multiplyScalar(0.5);
+                cyl.applyMatrix4(
+                    tmpMat4.makeTranslation(mid.x, mid.y, mid.z)
+                );
+
+                const hex = new THREE.Color(a0.color).getHexString();
+                pushGeom(stickGroups, hex, cyl);
             }
         }
+
+        // —— 合并并生成 Mesh ——
+        // 球体
+        sphereGroups.forEach((geoms, hex) => {
+            if (!geoms.length) return;
+            const merged = mergeGeometries(geoms, false);
+            const mat = new THREE.MeshLambertMaterial({
+                bumpScale: 1,
+                color: parseInt(hex, 16),
+                specular: new THREE.Color(0x000000),
+                reflectivity: 0,
+                shininess: 0
+            });
+            const mesh = new THREE.Mesh(merged, mat);
+            mesh.name = `merged-spheres-${hex}`;
+            group.add(mesh);
+        });
+
+        // 棍体
+        stickGroups.forEach((geoms, hex) => {
+            if (!geoms.length) return;
+            const merged = mergeGeometries(geoms, false);
+            const mat = new THREE.MeshLambertMaterial({
+                color: parseInt(hex, 16)
+            });
+            const mesh = new THREE.Mesh(merged, mat);
+            mesh.name = `merged-sticks-${hex}`;
+            group.add(mesh);
+        });
     },
 
     // show Cartoon

@@ -183,10 +183,22 @@ df.tool = {
     vrCameraZoom: function () {
 
     },
-    vrCameraCenter: function (canon, camera, object) {
-        // object.position.copy(camera.position);
-        let box = new THREE.Box3().setFromObject(object);
-        let center = box.getCenter(new THREE.Vector3());
+    vrCameraCenter: function (canon, camera, list) {
+        let totalBox;
+        if (Array.isArray(list)) {
+            if (list.length === 0) return;
+            // object.position.copy(camera.position);
+            totalBox = new THREE.Box3().setFromObject(list[0]);
+            //
+            for (let i = 1; i < list.length; i++) {
+                const box = new THREE.Box3().setFromObject(list[i]);
+                totalBox.union(box);
+            }
+        } else {
+            totalBox = new THREE.Box3().setFromObject(list);
+
+        }
+        let center = totalBox.getCenter(new THREE.Vector3());
         // console.log(center)
         // distance
         let distance = 0.5;
@@ -195,6 +207,48 @@ df.tool = {
         df.tool.smoothMoveObject(canon.position, cameraPosition, canon);
         // canon.lookAt(camera);
     },
+
+    // vrCameraCenter: function (canon, camera, list) {
+    //     // 1. 构造一个数组，方便统一处理
+    //     const objects = Array.isArray(list) ? list : [list];
+    //     if (objects.length === 0) return;
+    //
+    //     // 2. 计算合并包围盒
+    //     const totalBox = new THREE.Box3().setFromObject(objects[0]);
+    //     for (let i = 1; i < objects.length; i++) {
+    //         totalBox.union(new THREE.Box3().setFromObject(objects[i]));
+    //     }
+    //
+    //     // 3. 拿到包围盒中心（局部坐标系）
+    //     const centerLocal = totalBox.getCenter(new THREE.Vector3());
+    //
+    //     // 4. 把这个局部中心点转换到世界坐标
+    //     //    （这里假设所有 objects 都在同一个父节点下；如果不是，请先统一到一个空 Group）
+    //     const root = objects[0].parent;
+    //     const centerWorld = root.localToWorld(centerLocal.clone());
+    //
+    //     // 5. 获取 Rig（canon）的世界位置
+    //     const rigWorldPos = new THREE.Vector3();
+    //     canon.getWorldPosition(rigWorldPos);
+    //
+    //     // 6. 计算世界空间下的偏移向量
+    //     //    deltaWorld = rigWorldPos - centerWorld
+    //     const deltaWorld = rigWorldPos.clone().sub(centerWorld);
+    //
+    //     // 7. 把这个偏移从“世界”转换到 canon.parent 的本地坐标系
+    //     //    （因为我们要修改 canon.position，它是相对于 parent 的局部坐标）
+    //     const parentInv = new THREE.Matrix4().copy(canon.parent.matrixWorld).invert();
+    //     const deltaLocal = deltaWorld.clone().applyMatrix4(parentInv);
+    //
+    //     // 8. 直接平移 canon
+    //     canon.position.add(deltaLocal);
+    //     canon.lookAt(camera)
+    //     // canon.position.y = canon.position.y - 1.5
+    //
+    //     // （可选）如果你有平滑移动函数，可以替换上面这一行：
+    //     df.tool.smoothMoveObject(canon.position, canon.position.clone().add(deltaLocal), canon);
+    // },
+
     smoothMoveObject: function (stPos, edPos, object) {
         let duration = 1000;
         let startTime = performance.now();
@@ -217,6 +271,7 @@ df.tool = {
             let group = df.GROUP[pdbId]['main'][key];
             df.tool.vrCameraCenter(canon, camera, group);
         }
+
     },
     designAPI: function (path, pdbId, pdb_data) {
         fetch(path, {
@@ -375,7 +430,7 @@ df.tool = {
                     const pos = new THREE.Vector3();
                     worldBox.getCenter(pos);
                     console.log(pos)
-                    let newVec = new THREE.Vector3(pos.x/mesh.scale.x, pos.y/mesh.scale.y, pos.z/mesh.scale.z);
+                    let newVec = new THREE.Vector3(pos.x / mesh.scale.x, pos.y / mesh.scale.y, pos.z / mesh.scale.z);
                     console.log(newVec)
                     posDict[newkeys] = newVec;
                     break
@@ -442,6 +497,10 @@ df.tool = {
     //     }
     // },
     clearTools: function (mode) {
+        // 1. 全局缓存：避免重复创建纹理/材质
+        df.textSpriteCache = new Map();
+// 2. 存储所有需要更新的球体 + 对应精灵
+        df.numberedSpheres = [];
         THREE.Cache.clear();
         switch (mode) {
             case 2:
@@ -470,6 +529,19 @@ df.tool = {
                 delete df.pdbContent[pdbId];
                 break;
         }
+    },
+    clearToolsId: function (id) {
+        THREE.Cache.clear();
+        let pdbId = id;
+        delete df.w3m.mol[pdbId];
+        for (let modeKey in df.GROUP[pdbId]) {
+            df.tool.clearGroupIndex(df.GROUP[pdbId][modeKey]);
+        }
+        delete df.GROUP[pdbId];
+        delete df.PDBPOS[pdbId];
+        df.pdbId = df.pdbId.filter(item => item !== pdbId);
+        delete df.pdbText[pdbId];
+        delete df.pdbContent[pdbId];
     },
     initTools: function () {
         df.PathList = [];

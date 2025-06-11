@@ -4,6 +4,10 @@
 
 var df;
 df = {
+    // 全局暂停状态
+    isPaused: false,
+    // 用来在“恢复”时 resolve 的函数
+    _resumeResolve: null,
     // dafen
     isScore: false,
     ScoreTemp: 0,
@@ -46,7 +50,7 @@ df = {
 
     // gamepad
     // selection: 0,
-    selection: 102,
+    selection: 103,
     select_all: 100,
     select_main: 101,
     select_chain: 102,
@@ -107,7 +111,7 @@ df = {
     letterSpacing: 0.01,
     lineSpacing: 0.45,
 
-    scale: 0,
+    scale: 0.5,
 
     textMenuBgColor: '#ffffff',
 
@@ -171,7 +175,7 @@ df = {
     MeshType: "Mesh",
 
     // align
-    ALIGN_TOOLS: {"tm-align": window.location.href+ 'align'},
+    ALIGN_TOOLS: {"tm-align": window.location.href + 'align'},
     ALIGN_RECEPTOR: '',
     ALIGN_LIGAND: '',
     SELECTED_ALIGN: 'tm-align',
@@ -195,8 +199,8 @@ df = {
 
 // config
 df.config = {
-    mainMode: df.CARTOON_SSE,
-    hetMode: df.HET_BALL_ROD,
+    mainMode: df.BALL_AND_ROD,
+    hetMode: df.CARTOON_SSE,
     water_sphere_w: 8,
     surface: df.SURFACE,
     stick_sphere_w: 12,

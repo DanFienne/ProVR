@@ -1599,7 +1599,7 @@ w3m.config = {
     rep_mode_het: w3m.TUBE,
     // color
     // color_mode_main: w3m.COLOR_BY_SPECTRUM,
-    color_mode_main: w3m.COLOR_BY_CHAIN,
+    color_mode_main: w3m.COLOR_BY_PDB,
     color_mode_het: w3m.COLOR_BY_PDB,
 
     // smooth
