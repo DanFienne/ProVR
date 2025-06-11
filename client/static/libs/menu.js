@@ -177,7 +177,7 @@ async function loadAllPDBs() {
                             }
                         }
                     }
-                    if (param === 'f500') {
+                    if (param === df.pdbObjects[0]) {
                         df.tool.vrCameraCenter(canon, camera, list);
                     }
                     // 更新当前 group 为 previous
