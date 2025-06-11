@@ -210,21 +210,19 @@ df.actionManager = {
         df.actionManager.closeMenu();
         df.config.mainMode = df.BALL_AND_ROD;
         df.w3m.config.color_mode_main = 607;
-        df.scale = 0.2;
+        df.scale = 0.5;
         df.tool.clearTools(2);
 
-        // let url = window.location.href + 'diffuse';
-        // let data = {
-        //     'pdb_string': df.pdbText['4ulh'],
-        // };
-        // // submitAlign(data, url, df.ALIGN_LIGAND);
-        // data = JSON.stringify(data);
-        // delete df.w3m.mol['4ulh'];
-        // df.api.apiRequest(url, data, (response) => {
-        //     loadAllPDBs();
-        // });
-
-        loadAllPDBs();
+        let url = window.location.href + 'diffuse';
+        let data = {
+            'pdb_string': df.pdbText['4ulh'],
+        };
+        // submitAlign(data, url, df.ALIGN_LIGAND);
+        data = JSON.stringify(data);
+        delete df.w3m.mol['4ulh'];
+        df.api.apiRequest(url, data, (response) => {
+            loadAllPDBs();
+        });
     },
     closeMenu: function () {
         df.showMenu = false;
