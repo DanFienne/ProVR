@@ -197,20 +197,20 @@ df.dfRender = {
         });
 
         // xr
-        leftController = this.createController(renderer, canon, 0);
-        rightController = this.createController(renderer, canon, 1);
+        leftController = this.createController(renderer, canon, 1);
+        rightController = this.createController(renderer, canon, 0);
         leftRayCaster = new THREE.Raycaster();
         leftRayCaster.camera = camera;
         rightRayCaster = new THREE.Raycaster();
         rightRayCaster.camera = camera;
 
         // Hand
-        leftHand = this.createHandController(renderer, canon, 0);
-        rightHand = this.createHandController(renderer, canon, 1);
+        leftHand = this.createHandController(renderer, canon, 1);
+        rightHand = this.createHandController(renderer, canon, 0);
 
         let controllerModelFactory = new XRControllerModelFactory();
-        leftControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 0);
-        rightControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 1);
+        leftControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 1);
+        rightControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 0);
         const leftControllerPointer = new OculusHandPointerModel(leftHand, leftController);
         const rightControllerPointer = new OculusHandPointerModel(rightHand, rightController);
         leftHand.add(leftControllerPointer);
@@ -226,10 +226,11 @@ df.dfRender = {
             let leftTempMatrix = new THREE.Matrix4();
             // df.tool.initPDBView(df.SelectedPDBId);
             const inputSources = renderer.xr.getSession().inputSources;
-            if (inputSources && inputSources[0]) {
-                if (inputSources[0].hand && (inputSources[0].handedness === 'left')) {
+            console.log(inputSources[1].handedness )
+            if (inputSources && inputSources[1]) {
+                if (inputSources[1].hand && (inputSources[1].handedness === 'left')) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, leftControllerPointer.pointerObject);
-                } else if (inputSources[0].gamepad) {
+                } else if (inputSources[1].gamepad) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, event.target);
                 }
             }
@@ -238,12 +239,12 @@ df.dfRender = {
         rightController.addEventListener('selectstart', function (event) {
             let rightTempMatrix = new THREE.Matrix4();
             const inputSources = renderer.xr.getSession().inputSources;
-            if (inputSources && inputSources[1] && (inputSources[1].handedness === 'right')) {
-                if (inputSources[1].hand) {
+            if (inputSources && inputSources[0] && (inputSources[0].handedness === 'right')) {
+                if (inputSources[0].hand) {
                     // leftLine.visible = false;
                     // rightLine.visible = false;
                     onTriggerDown(event, rightRayCaster, rightTempMatrix, rightControllerPointer.pointerObject);
-                } else if (inputSources[1].gamepad) {
+                } else if (inputSources[0].gamepad) {
                     // leftLine.visible = true;
                     // rightLine.visible = true;
                     onTriggerDown(event, rightRayCaster, rightTempMatrix, event.target);
