@@ -274,175 +274,180 @@ df.dfRender = {
 
         // camera.updateProjectionMatrix();
         function animate() {
-            // 选中 residue 并拖拽
-            if (df.selection === df.select_residue) {
-                if (df.SELECTED_RESIDUE.type === df.MeshType) {
-                    if (df.config.mainMode === df.CARTOON_SSE) {
+            try {
+                // 选中 residue 并拖拽
+                if (df.selection === df.select_residue) {
+                    if (df.SELECTED_RESIDUE.type === df.MeshType) {
+                        if (df.config.mainMode === df.CARTOON_SSE) {
 
-                        // 根据 select residue 获取 residue信息
-                        let meshInfo = df.SELECTED_RESIDUE.userData.presentAtom
-                        let meshId = meshInfo.id;
-                        let meshPos = new THREE.Vector3(meshInfo.pos.x, meshInfo.pos.y, meshInfo.pos.z);
-                        let molId = meshInfo.pdbId;
-                        let controller_mesh = df.SELECTED_RESIDUE.matrixWorld;
-                        // if (df.SELECTED_RESIDUE.controller) {
-                        //     controller_mesh = df.SELECTED_RESIDUE.controller
-                        // }
-                        meshPos.applyMatrix4(controller_mesh);
-                        let x = meshPos.x / ((df.scale));
-                        let y = meshPos.y / ((df.scale));
-                        let z = meshPos.z / ((df.scale));
+                            // 根据 select residue 获取 residue信息
+                            let meshInfo = df.SELECTED_RESIDUE.userData.presentAtom
+                            let meshId = meshInfo.id;
+                            let meshPos = new THREE.Vector3(meshInfo.pos.x, meshInfo.pos.y, meshInfo.pos.z);
+                            let molId = meshInfo.pdbId;
+                            let controller_mesh = df.SELECTED_RESIDUE.matrixWorld;
+                            // if (df.SELECTED_RESIDUE.controller) {
+                            //     controller_mesh = df.SELECTED_RESIDUE.controller
+                            // }
+                            meshPos.applyMatrix4(controller_mesh);
+                            let x = meshPos.x / ((df.scale));
+                            let y = meshPos.y / ((df.scale));
+                            let z = meshPos.z / ((df.scale));
 
-                        console.log("xyz", x, y, z)
-                        // 修改 df.PathList 对应坐标
-                        let path = df.PathList[df.SelectedPDBId]
-                        for (let k in df.PathList[df.SelectedPDBId][0]) {
-                            if (path[0][k][0] === meshId) {
-                                path[0][k][1][0] = parseFloat(x.toFixed(3));
-                                path[0][k][1][1] = parseFloat(y.toFixed(3));
-                                path[0][k][1][2] = parseFloat(z.toFixed(3));
+                            console.log("xyz", x, y, z)
+                            // 修改 df.PathList 对应坐标
+                            let path = df.PathList[df.SelectedPDBId]
+                            for (let k in df.PathList[df.SelectedPDBId][0]) {
+                                if (path[0][k][0] === meshId) {
+                                    path[0][k][1][0] = parseFloat(x.toFixed(3));
+                                    path[0][k][1][1] = parseFloat(y.toFixed(3));
+                                    path[0][k][1][2] = parseFloat(z.toFixed(3));
+                                }
                             }
-                        }
-                        // let posDIct = {'matrixWorld': df.SELECTED_RESIDUE.matrixWorld}
-                        let posDIct = {}
-                        posDIct = df.tool.getResidueNewPos(df.SELECTED_RESIDUE, posDIct)
-                        df.dfRender.changePDBData(posDIct);
-                        df.tool.changeFrame(molId, meshId);
-                        df.dfRender.clear(0);
-                        // 重新生成 residue 结构
+                            // let posDIct = {'matrixWorld': df.SELECTED_RESIDUE.matrixWorld}
+                            let posDIct = {}
+                            posDIct = df.tool.getResidueNewPos(df.SELECTED_RESIDUE, posDIct)
+                            df.dfRender.changePDBData(posDIct);
+                            df.tool.changeFrame(molId, meshId);
+                            df.dfRender.clear(0);
+                            // 重新生成 residue 结构
 
-                        console.log(df.SelectedPDBId);
-                        df.painter.showAllResidues(df.config.mainMode, df.SelectedPDBId);
-                        // df.controller.drawGeometry(df.config.mainMode, df.SelectedPDBId);
-                        for (let i in df.GROUP[df.SelectedPDBId]['main']) {
-                            let aaa = df.GROUP[df.SelectedPDBId]['main'][i];
-                            aaa.scale.set(df.scale, df.scale, df.scale);
-                            // df.tool.vrCameraCenter(camera, aaa.children[10]);
+                            console.log(df.SelectedPDBId);
+                            df.painter.showAllResidues(df.config.mainMode, df.SelectedPDBId);
+                            // df.controller.drawGeometry(df.config.mainMode, df.SelectedPDBId);
+                            for (let i in df.GROUP[df.SelectedPDBId]['main']) {
+                                let aaa = df.GROUP[df.SelectedPDBId]['main'][i];
+                                aaa.scale.set(df.scale, df.scale, df.scale);
+                                // df.tool.vrCameraCenter(camera, aaa.children[10]);
+                            }
                         }
                     }
                 }
-            }
-            // raycaster
-            if (isImmersive) {
-                const xrSession = renderer.xr.getSession();
-                if (!leftObject) {
-                    leftObject = leftController;
-                }
-                if (!rightObject) {
-                    rightObject = rightController;
-                }
-                xrSession.addEventListener('inputsourceschange', (event) => {
-                    xrSession.inputSources.forEach((inputSource) => {
-                        console.log("inputSource", inputSource)
-                        if (inputSource.hand) {
-                            switch (inputSource.handedness) {
-                                case 'left':
-                                    leftObject = leftControllerPointer.pointerObject
-                                    break
-                                case 'right':
-                                    rightObject = rightControllerPointer.pointerObject
-                                    break
+                // raycaster
+                if (isImmersive) {
+                    const xrSession = renderer.xr.getSession();
+                    if (!leftObject) {
+                        leftObject = leftController;
+                    }
+                    if (!rightObject) {
+                        rightObject = rightController;
+                    }
+                    xrSession.addEventListener('inputsourceschange', (event) => {
+                        xrSession.inputSources.forEach((inputSource) => {
+                            console.log("inputSource", inputSource)
+                            if (inputSource.hand) {
+                                switch (inputSource.handedness) {
+                                    case 'left':
+                                        leftObject = leftControllerPointer.pointerObject
+                                        break
+                                    case 'right':
+                                        rightObject = rightControllerPointer.pointerObject
+                                        break
+                                }
+                            } else if (inputSource.gamepad) {
+                                switch (inputSource.handedness) {
+                                    case 'left':
+                                        leftObject = leftController
+                                        break
+                                    case 'right':
+                                        rightObject = rightController
+                                        break
+                                }
                             }
-                        } else if (inputSource.gamepad) {
-                            switch (inputSource.handedness) {
-                                case 'left':
-                                    leftObject = leftController
-                                    break
-                                case 'right':
-                                    rightObject = rightController
-                                    break
+                        });
+                    });
+                    let leftTempMatrix = new THREE.Matrix4();
+                    let leftintersect = getIntersectionsRing(leftObject, leftRayCaster, leftTempMatrix);
+                    let rightTempMatrix = new THREE.Matrix4();
+                    let rightintersect = getIntersectionsRing(rightObject, rightRayCaster, rightTempMatrix);
+                    if (leftintersect) {
+                        let obj = leftintersect.object;
+                        if (obj.userData && obj.userData.presentAtom) {
+                            let tsAtom = obj.userData.presentAtom;
+                            let index = obj.parent.children.indexOf(obj)
+                            if (index) {
+                                let text = tsAtom.pdbId + '/' + tsAtom.chainName + '/' + tsAtom.resId + '/' + tsAtom.resName + '/' + tsAtom.name + '/' + index
+                                df.lfpt.position.copy(leftintersect.point)
+                                df.lfpt.position.z = leftintersect.point.z - 0.01
+                                df.drawer.updateText(text, df.lfpt)
                             }
                         }
-                    });
-                });
-                let leftTempMatrix = new THREE.Matrix4();
-                let leftintersect = getIntersectionsRing(leftObject, leftRayCaster, leftTempMatrix);
-                let rightTempMatrix = new THREE.Matrix4();
-                let rightintersect = getIntersectionsRing(rightObject, rightRayCaster, rightTempMatrix);
-                if (leftintersect) {
-                    let obj = leftintersect.object;
-                    if (obj.userData && obj.userData.presentAtom) {
-                        let tsAtom = obj.userData.presentAtom;
-                        let index = obj.parent.children.indexOf(obj)
-                        if (index) {
+                        // 将Sprite移动到交点处
+                        df.leftRing.position.copy(leftintersect.point);
+                        const distance = camera.position.distanceTo(leftintersect.point);
+                        // 计算比例因子，保持大小不变
+                        const scaleFactor = distance / df.ringDistance;
+                        df.leftRing.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                        df.leftRing.visible = true;
+                    } else {
+                        df.leftRing.visible = false;
+                    }
+                    if (rightintersect) {
+                        let obj = rightintersect.object;
+                        if (obj.userData && obj.userData.presentAtom) {
+                            let tsAtom = obj.userData.presentAtom;
+                            let index = obj.parent.children.indexOf(obj)
                             let text = tsAtom.pdbId + '/' + tsAtom.chainName + '/' + tsAtom.resId + '/' + tsAtom.resName + '/' + tsAtom.name + '/' + index
-                            df.lfpt.position.copy(leftintersect.point)
-                            df.lfpt.position.z = leftintersect.point.z - 0.01
+                            df.lfpt.position.copy(rightintersect.point)
+                            df.lfpt.position.z = rightintersect.point.z - 0.01
                             df.drawer.updateText(text, df.lfpt)
                         }
+                        // const intersect = rightintersect[0];
+                        // 将Sprite移动到交点处
+                        df.rightRing.position.copy(rightintersect.point);
+                        const distance = camera.position.distanceTo(rightintersect.point);
+
+                        // 计算比例因子，保持大小不变
+                        const scaleFactor = distance / df.ringDistance;
+                        df.rightRing.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                        df.rightRing.visible = true;
+                    } else {
+                        df.rightRing.visible = false;
                     }
-                    // 将Sprite移动到交点处
-                    df.leftRing.position.copy(leftintersect.point);
-                    const distance = camera.position.distanceTo(leftintersect.point);
-                    // 计算比例因子，保持大小不变
-                    const scaleFactor = distance / df.ringDistance;
-                    df.leftRing.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                    df.leftRing.visible = true;
-                } else {
-                    df.leftRing.visible = false;
                 }
-                if (rightintersect) {
-                    let obj = rightintersect.object;
-                    if (obj.userData && obj.userData.presentAtom) {
-                        let tsAtom = obj.userData.presentAtom;
-                        let index = obj.parent.children.indexOf(obj)
-                        let text = tsAtom.pdbId + '/' + tsAtom.chainName + '/' + tsAtom.resId + '/' + tsAtom.resName + '/' + tsAtom.name + '/' + index
-                        df.lfpt.position.copy(rightintersect.point)
-                        df.lfpt.position.z = rightintersect.point.z - 0.01
-                        df.drawer.updateText(text, df.lfpt)
-                    }
-                    // const intersect = rightintersect[0];
-                    // 将Sprite移动到交点处
-                    df.rightRing.position.copy(rightintersect.point);
-                    const distance = camera.position.distanceTo(rightintersect.point);
-
-                    // 计算比例因子，保持大小不变
-                    const scaleFactor = distance / df.ringDistance;
-                    df.rightRing.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                    df.rightRing.visible = true;
-                } else {
-                    df.rightRing.visible = false;
-                }
-            }
 
 
-            // 1) 检测手柄按键
-            const session = renderer.xr.getSession();
-            if (session) {
-                for (const source of session.inputSources) {
-                    if (source.gamepad) {
-                        const gp = source.gamepad;
-                        // 以 buttons[3] 为例，检测从松开到按下的那一刻
-                        const btn = gp.buttons[1];
-                        if (btn.pressed && !btn._prev) {
-                            // 底部按键被一次按下
-                            togglePause();
+                // 1) 检测手柄按键
+                const session = renderer.xr.getSession();
+                if (session) {
+                    for (const source of session.inputSources) {
+                        if (source.gamepad) {
+                            const gp = source.gamepad;
+                            // 以 buttons[3] 为例，检测从松开到按下的那一刻
+                            const btn = gp.buttons[1];
+                            if (btn.pressed && !btn._prev) {
+                                // 底部按键被一次按下
+                                togglePause();
+                            }
+                            btn._prev = btn.pressed;
                         }
-                        btn._prev = btn.pressed;
                     }
                 }
+
+                // 1) 拿到摄像机世界坐标
+                // 获得摄像机世界坐标
+                const camPos = new THREE.Vector3();
+                camera.getWorldPosition(camPos);
+
+                df.numberedSpheres.forEach(item => {
+                    const {mesh, sprite, radius} = item;
+                    // 1) 计算球心世界坐标
+                    const center = new THREE.Vector3();
+                    mesh.getWorldPosition(center);
+                    // 2) 朝向摄像机的方向
+                    const dir = new THREE.Vector3().subVectors(camPos, center).normalize();
+                    // 3) 在球表面稍外侧的世界坐标
+                    const worldPos = center.clone().addScaledVector(dir, radius + 0.01);
+                    // 4) 把 worldPos 转成精灵父对象（group）本地坐标
+                    sprite.parent.worldToLocal(worldPos);
+                    // 5) 赋值给 sprite.position
+                    sprite.position.copy(worldPos);
+                    // THREE.Sprite 会自动面向摄像机
+                });
+
+            } catch (err) {
+                console.error('An error occurred in main logic:', err);
             }
-
-            // 1) 拿到摄像机世界坐标
-            // 获得摄像机世界坐标
-            const camPos = new THREE.Vector3();
-            camera.getWorldPosition(camPos);
-
-            df.numberedSpheres.forEach(item => {
-                const {mesh, sprite, radius} = item;
-                // 1) 计算球心世界坐标
-                const center = new THREE.Vector3();
-                mesh.getWorldPosition(center);
-                // 2) 朝向摄像机的方向
-                const dir = new THREE.Vector3().subVectors(camPos, center).normalize();
-                // 3) 在球表面稍外侧的世界坐标
-                const worldPos = center.clone().addScaledVector(dir, radius + 0.01);
-                // 4) 把 worldPos 转成精灵父对象（group）本地坐标
-                sprite.parent.worldToLocal(worldPos);
-                // 5) 赋值给 sprite.position
-                sprite.position.copy(worldPos);
-                // THREE.Sprite 会自动面向摄像机
-            });
 
             camera.updateProjectionMatrix();
             renderer.render(scene, camera);

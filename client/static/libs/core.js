@@ -111,7 +111,7 @@ df = {
     letterSpacing: 0.01,
     lineSpacing: 0.45,
 
-    scale: 0.5,
+    scale: 0.05,
 
     textMenuBgColor: '#ffffff',
 

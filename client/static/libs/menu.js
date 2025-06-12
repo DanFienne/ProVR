@@ -359,7 +359,7 @@ df.actionManager = {
     },
 
     loadFileAction: function (param) {
-        df.tool.clearTools(2);
+        // df.tool.clearTools(2);
         df.isScore = false;
         df.loader.load(param, 'name', function () {
             Promise.all([
@@ -367,7 +367,7 @@ df.actionManager = {
                 df.controller.drawGeometry(df.config.hetMode, param)
             ]).then(() => {
                 df.SelectedPDBId = param;
-                df.scale = 0.005;
+                df.scale = 0.02;
                 let list = []
                 for (let index in df.GROUP[df.SelectedPDBId]) {
                     for (let i in df.GROUP[df.SelectedPDBId][index]) {
@@ -468,10 +468,9 @@ function createLoadPDBButton(x, y, z, parentButton) {
     }
     if (df.FILE_PATH.length > 0) {
         let number = 0;
-        let list = ['1jy1', '1jy6', '5da1', '5da5']
         for (let idx in df.FILE_PATH) {
             let text = df.FILE_PATH[idx];
-            if (list.includes(text)) {
+            if (df.pdbObjects.includes(text)) {
                 continue
             }
             // x = x + df.lineSpacing;
