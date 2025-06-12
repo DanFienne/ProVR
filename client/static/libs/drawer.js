@@ -334,6 +334,8 @@ df.drawer = {
         let mesh = new THREE.Mesh(geometry, material);
         mesh.danfeng = 1;
         mesh.position.set(0, -1, -4);
+        mesh.renderOrder = 999;
+        mesh.material.depthTest = false;
         if (df.GROUP['menu'] !== undefined) {
             df.GROUP['menu'].add(mesh);
         }
@@ -350,29 +352,39 @@ df.drawer = {
             map: texture
         }); // 使用贴图
         let mesh = new THREE.Mesh(geometry, material);
-        let offset = new THREE.Vector3(-0.8, 0.8, -4);
+        let offset = new THREE.Vector3(-0.8, 0.8, -3);
         mesh.position.copy(offset);
         mesh.name = 'menu-button';
+        mesh.renderOrder = 998;
+        mesh.material.depthTest = false;
         mesh.danfeng = 1;
         camera.add(mesh);
         return mesh;
     },
-    createTextTexture: function (text) {
+    createTextTexture: function (text, length = 1) {
         // canvas create text
         const scale = window.devicePixelRatio;
         let canvas = document.createElement('canvas');
         canvas.width = scale * df.textContentWidth;
         canvas.height = scale * df.textContentHeight;
         let context = canvas.getContext('2d');
-        // bg color
-        context.fillStyle = df.textMenuBgColor;
+        // 层层递进的颜色：HSL色相递进
+        const maxLayers = 5;
+        const minHue = 210;
+        const maxHue = 360;
+        const hue = minHue + ((maxHue - minHue) * Math.min(length, maxLayers) / maxLayers);
+        const bgColor = `hsl(${hue}, 70%, 60%)`; // 直接用字符串
+
+        context.fillStyle = bgColor; // 正确写法
         context.fillRect(0, 0, canvas.width, canvas.height);
+
         // text
         context.font = 'Bold 250px "SAO"';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillStyle = 'black'; // 文本颜色
+        context.fillStyle = 'white'; // 文本颜色
         context.fillText(text, canvas.width / 2, canvas.height / 2);
+
         const texture = new THREE.Texture(canvas);
         texture.needsUpdate = true;
         // 设置纹理过滤器
@@ -380,21 +392,23 @@ df.drawer = {
         // texture.magFilter = THREE.LinearFilter;
         return texture;
     },
-    createTextButton: function (text, position, label) {
+    createTextButton: function (text, position, label, length = 1) {
         let geometry = new THREE.PlaneGeometry(df.textMenuWidth, df.textMenuHeight);
-        let texture = df.drawer.createTextTexture(text);
-        // texture.minFilter = THREE.LinearFilter;
+        let texture = df.drawer.createTextTexture(text, length);
+
         let material = new THREE.MeshBasicMaterial({
             map: texture,
-            // transparent: true, // 使材质透明
-            // opacity: 0.8 // 调整不透明度
+            // transparent: true,
+            // opacity: 0.8
         });
+
         let mesh = new THREE.Mesh(geometry, material);
         mesh.name = text;
         mesh.title = label;
-        // mesh.position.set(0, -1, -4);
         mesh.position.copy(position);
         mesh.danfeng = 1;
+        mesh.renderOrder = 998;
+        mesh.material.depthTest = false;
         if (df.GROUP['menu'] !== undefined) {
             df.GROUP['menu'].add(mesh);
         }
@@ -444,6 +458,8 @@ df.drawer = {
         // 添加到场景中，但最初设置为不可见
         circleSprite.visible = false;
         circleSprite.name = 'ring'
+        circleSprite.renderOrder = 1000;
+        circleSprite.material.depthTest = false;
         scene.add(circleSprite);
         return circleSprite;
     },

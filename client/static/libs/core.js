@@ -113,7 +113,7 @@ df = {
 
     scale: 0.05,
 
-    textMenuBgColor: '#ffffff',
+    textMenuBgColor: '#000000',
 
     // all pdb info group, 这里包含 pdb 用于展示的全部属性
     GROUP: {},
