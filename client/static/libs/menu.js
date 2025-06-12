@@ -148,11 +148,16 @@ async function waitIfPaused() {
     }
 }
 
+
 async function loadAllPDBs() {
     let previousGroup = null;
     let previousPDBId = null;
+    let step = 0;  // diffusion 过程的 timestep 计数器
+
     for (const param of df.pdbObjects) {
         await waitIfPaused();
+
+
         // 加载当前 PDB 并显示
         await new Promise((resolve) => {
             df.loader.load(param, 'name', function () {
@@ -161,10 +166,13 @@ async function loadAllPDBs() {
                     // df.controller.drawGeometry(df.config.hetMode, param)
                 ]).then(() => {
                     df.SelectedPDBId = param;
+                    // 更新并显示当前步数
+                    step += 1;
+                    df.updateStepText(step);
 
                     const group = df.GROUP[df.SelectedPDBId];
                     // 遍历并缩放所有对象，并设置为可见
-                    let list = []
+                    let list = [];
                     for (let index in group) {
                         for (let i in group[index]) {
                             let obj = group[index][i];
@@ -180,30 +188,80 @@ async function loadAllPDBs() {
                     if (param === df.pdbObjects[0]) {
                         df.tool.vrCameraCenter(canon, camera, list);
                     }
-                    // 更新当前 group 为 previous
+                    // 清理上一个 group
                     if (previousGroup && previousPDBId) {
-                        df.tool.clearToolsId(previousPDBId)
+                        df.tool.clearToolsId(previousPDBId);
                     }
                     previousGroup = group;
                     previousPDBId = param;
 
-                    // 等待几秒再加载下一个
-                    setTimeout(() => {
-                        resolve();
-                    }, 20); // 显示 3 秒
-
+                    // 等待一点时间再加载下一个
+                    setTimeout(resolve, 50);
                 });
             });
         });
     }
-    // 最后一个 group 不删除（可选）
-    // 如果你想最后一个也删除，加上：
-    // if (previousGroup && previousPDBId) {
-    //     disposeGroup(previousGroup);
-    //     delete df.GROUP[previousPDBId];
-    // }
+
+    // （可选）最后一个 group 若也要清理，就在这里调用 disposeGroup
 }
 
+//
+// async function loadAllPDBs() {
+//     let previousGroup = null;
+//     let previousPDBId = null;
+//     for (const param of df.pdbObjects) {
+//         await waitIfPaused();
+//         // 加载当前 PDB 并显示
+//         await new Promise((resolve) => {
+//             df.loader.load(param, 'name', function () {
+//                 Promise.all([
+//                     df.controller.drawGeometry(df.config.mainMode, param),
+//                     // df.controller.drawGeometry(df.config.hetMode, param)
+//                 ]).then(() => {
+//                     df.SelectedPDBId = param;
+//
+//                     const group = df.GROUP[df.SelectedPDBId];
+//                     // 遍历并缩放所有对象，并设置为可见
+//                     let list = []
+//                     for (let index in group) {
+//                         for (let i in group[index]) {
+//                             let obj = group[index][i];
+//                             list.push(obj);
+//                             obj.scale.set(df.scale, df.scale, df.scale);
+//                             obj.visible = true;
+//                             if (obj.surface) {
+//                                 obj.surface.scale.set(df.scale, df.scale, df.scale);
+//                                 obj.surface.visible = true;
+//                             }
+//                         }
+//                     }
+//                     if (param === df.pdbObjects[0]) {
+//                         df.tool.vrCameraCenter(canon, camera, list);
+//                     }
+//                     // 更新当前 group 为 previous
+//                     if (previousGroup && previousPDBId) {
+//                         df.tool.clearToolsId(previousPDBId)
+//                     }
+//                     previousGroup = group;
+//                     previousPDBId = param;
+//
+//                     // 等待几秒再加载下一个
+//                     setTimeout(() => {
+//                         resolve();
+//                     }, 20); // 显示 3 秒
+//
+//                 });
+//             });
+//         });
+//     }
+//     // 最后一个 group 不删除（可选）
+//     // 如果你想最后一个也删除，加上：
+//     // if (previousGroup && previousPDBId) {
+//     //     disposeGroup(previousGroup);
+//     //     delete df.GROUP[previousPDBId];
+//     // }
+// }
+//
 
 df.actionManager = {
     diffuse: function () {
@@ -212,18 +270,19 @@ df.actionManager = {
         df.w3m.config.color_mode_main = 607;
         df.scale = 0.5;
 
-        let url = window.location.href + 'diffuse';
-        let data = {
-            'pdb_string': df.pdbText['4ulh'],
-        };
-
-        // submitAlign(data, url, df.ALIGN_LIGAND);
-        data = JSON.stringify(data);
-        df.tool.clearTools(2);
-        delete df.w3m.mol['4ulh'];
-        df.api.apiRequest(url, data, (response) => {
-            loadAllPDBs();
-        });
+        // let url = window.location.href + 'diffuse';
+        // let data = {
+        //     'pdb_string': df.pdbText['4ulh'],
+        // };
+        //
+        // // submitAlign(data, url, df.ALIGN_LIGAND);
+        // data = JSON.stringify(data);
+        // df.tool.clearTools(2);
+        // delete df.w3m.mol['4ulh'];
+        // df.api.apiRequest(url, data, (response) => {
+        //     loadAllPDBs();
+        // });
+        loadAllPDBs();
     },
     closeMenu: function () {
         df.showMenu = false;
@@ -615,6 +674,24 @@ function createMenuButton(group) {
         state: 1,
         action: df.actionManager.clearPDBAction,
     });
+    number += 1;
+    let design1 = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Design",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "Design",
+        length: 1,
+        state: 1,
+        action: df.actionManager.clearPDBAction,
+    });
+    number += 1;
+    let score1 = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Score",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "Score",
+        length: 1,
+        state: 1,
+        action: df.actionManager.clearPDBAction,
+    });
 
     number += 1;
     let docking = buttonFactory.createButton(df.DEFBUTTON, {
@@ -904,7 +981,7 @@ function createMenuButton(group) {
         length: 2,
     });
     let ligandBackbone = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "BackBone",
+        text: "Backbone",
         position: new THREE.Vector3(x, y, z),
         label: "backbone",
         action: df.actionManager.ligandAction,
@@ -922,7 +999,7 @@ function createMenuButton(group) {
     let ligandBallRod = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Ball & Rod",
         position: new THREE.Vector3(x, y, z),
-        label: "ballrod",
+        label: "ball rod",
         action: df.actionManager.ligandAction,
         params: df.BALL_AND_ROD,
         length: 2,

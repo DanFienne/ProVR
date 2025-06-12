@@ -44,9 +44,9 @@ df.GROUP['menu'].visible = df.showMenu;
 createMenuButton();
 
 df.lfpt = df.drawer.createSprite('point')
-df.scoreValue = df.drawer.createSprite('score')
+// df.scoreValue = df.drawer.createSprite('score')
 df.drawer.updateText('1', df.lfpt)
-df.drawer.updateText('1', df.scoreValue)
+// df.drawer.updateText('1', df.scoreValue)
 
 
 const loader = new OBJLoader();
@@ -123,7 +123,7 @@ const loader = new OBJLoader();
 
 df.pdbObjects = [];
 for (let i = 100; i >= 1; i--) {
-  df.pdbObjects.push('f' + i.toString().padStart(3, '0'));
+    df.pdbObjects.push('f' + i.toString().padStart(3, '0'));
 }
 
 
@@ -261,3 +261,79 @@ for (let i = 100; i >= 1; i--) {
 
 
 // Helper function to resize and align groups
+function createStepIndicator(camera) {
+    // 1) 离屏 Canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 150;
+    const ctx = canvas.getContext('2d');
+
+    // 2) Three.js 纹理
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+
+    // 3) 精灵材质
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+    });
+
+    // 4) 精灵 & 大小 & 位置
+    const sprite = new THREE.Sprite(material);
+    // 物理尺寸：宽 0.8m，高 0.3m
+    sprite.scale.set(0.8, 0.3, 1);
+    // 左上方、稍微往前
+    sprite.position.set(-1.0, 1.0, -1.5);
+
+    camera.add(sprite);
+
+    // 5) 返回更新函数
+    return function updateStepText(step) {
+        const text = `Step ${step}`;
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 文本样式
+        const fontSize = 96;
+        ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
+        ctx.textBaseline = 'middle';
+
+        // 测量文字宽度
+        const metrics = ctx.measureText(text);
+        const textWidth = metrics.width;
+
+        // 背景矩形参数
+        const paddingX = 20;
+        const paddingY = 10;
+        const rectX = 10;
+        const rectY = (canvas.height - fontSize) / 2 - paddingY;
+        const rectW = textWidth + paddingX * 2;
+        const rectH = fontSize + paddingY * 2;
+
+        // 画白底
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(rectX, rectY, rectW, rectH);
+
+        // 画黑框
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#000000';
+        ctx.strokeRect(rectX, rectY, rectW, rectH);
+
+        // 画文字（黑色填充）
+        ctx.fillStyle = '#000000';
+        ctx.fillText(text, rectX + paddingX, canvas.height / 2);
+
+        // 通知更新纹理
+        texture.needsUpdate = true;
+    };
+}
+
+// —————————————— 使用示例 ——————————————
+
+// 假设这里是你的全局 VR 相机
+// let camera = df.config.vrCamera 或者你自己持有的 camera 实例
+df.updateStepText = createStepIndicator(camera);
