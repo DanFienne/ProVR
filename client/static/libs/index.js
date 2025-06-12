@@ -122,7 +122,7 @@ const loader = new OBJLoader();
 // pdbObjects = {};
 
 df.pdbObjects = [];
-for (let i = 500; i >= 1; i--) {
+for (let i = 100; i >= 1; i--) {
   df.pdbObjects.push('f' + i.toString().padStart(3, '0'));
 }
 
