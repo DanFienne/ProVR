@@ -211,7 +211,6 @@ df.actionManager = {
         df.config.mainMode = df.BALL_AND_ROD;
         df.w3m.config.color_mode_main = 607;
         df.scale = 0.5;
-        df.tool.clearTools(2);
 
         let url = window.location.href + 'diffuse';
         let data = {
