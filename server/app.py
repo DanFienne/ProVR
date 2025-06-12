@@ -14,11 +14,9 @@ import config
 import httpx
 import os
 
-
 app = FastAPI()
 templates = Jinja2Templates(directory="../client/templates")
 app.mount("/static", StaticFiles(directory="../client/static"), name="static")
-
 
 # dfire
 dfire_model = DFIRE()
@@ -115,12 +113,12 @@ async def align(response: HDock):
 
     path_data = "./data/"
 
-    with open(path_data+'receptor.pdb', 'w', encoding='utf-8') as fw1:
+    with open(path_data + 'receptor.pdb', 'w', encoding='utf-8') as fw1:
         fw1.writelines(receptor)
-    with open(path_data+'ligand.pdb', 'w', encoding='utf-8') as fw2:
+    with open(path_data + 'ligand.pdb', 'w', encoding='utf-8') as fw2:
         fw2.writelines(ligand)
 
-    pymol_align_global(path_data+'receptor.pdb', path_data+'ligand.pdb')
+    pymol_align_global(path_data + 'receptor.pdb', path_data + 'ligand.pdb')
     # result = ligand
     result = get_ss_from_pymol(path_data + 'aligned_mobile.pdb')
     print(result)
@@ -149,12 +147,12 @@ async def score(response: HDock):
         ligand = response.ligand
 
         path_data = "./data/"
-        with open(path_data+'receptor.pdb', 'w', encoding='utf-8') as fw1:
+        with open(path_data + 'receptor.pdb', 'w', encoding='utf-8') as fw1:
             fw1.writelines(receptor)
-        with open(path_data+'ligand.pdb', 'w', encoding='utf-8') as fw2:
+        with open(path_data + 'ligand.pdb', 'w', encoding='utf-8') as fw2:
             fw2.writelines(ligand)
 
-        score = compare_structures(path_data+'receptor.pdb', path_data+'ligand.pdb')
+        score = compare_structures(path_data + 'receptor.pdb', path_data + 'ligand.pdb')
         return JSONResponse(content={"score": score})
     except Exception as e:
         print(e)
@@ -162,41 +160,101 @@ async def score(response: HDock):
 
 
 @app.post("/diffuse")
-async def diffuse(response: Design):
+async def diffuse(request: Design):
+    receptor = request.pdb_string
     try:
-        receptor = response.pdb_string
-        # 使用 httpx 异步客户端调用 /infer 接口
-        async with httpx.AsyncClient() as client:
+        # 1) 创建 AsyncClient 时禁用超时
+        async with httpx.AsyncClient(timeout=None) as client:
+            # 2) 单次请求也可以再指定 timeout=None
             infer_response = await client.post(
-                "http://localhost:8000/infer",  # 如果两个接口在同一个服务上
-                json={"pdb_str": receptor}
+                "http://localhost:8000/infer",
+                json={"pdb_str": receptor},
+                timeout=None
             )
-        result = infer_response.json()
-        data = result.get("x0_traj_pdb", "")
-        output_dir = "../client/static/data"
-        model_lines = []
-        model_count = 0
-        for line in data:
-            if line.startswith('MODEL'):
-                model_lines = []
-            elif line.startswith('ENDMDL'):
-                model_lines.append(line)
-                model_count += 1
-                out_path = os.path.join(
-                    output_dir, f'f{model_count:03d}.pdb'
-                )
-                with open(out_path, 'w') as fout:
-                    # 写 header
-                    if header_lines:
-                        fout.writelines(header_lines)
-                    # 写模型本体
-                    fout.writelines(model_lines)
-                model_lines = []
-            else:
-                model_lines.append(line)
-
-
-
+            # 如果状态码不是 2xx 会抛出 httpx.HTTPStatusError
+            infer_response.raise_for_status()
+            result = infer_response.json()
+    except httpx.HTTPStatusError as e:
+        # 接口返回了非200
+        print(f"[infer] bad status: {e.response.status_code} ─ {e}")
+        return JSONResponse(status_code=500, content={"score": 0})
     except Exception as e:
-        print(e)
-        return JSONResponse(content={"score": 0})
+        # 网络错误、超时、解析失败等
+        print(f"[infer] request failed: {e}")
+        return JSONResponse(status_code=500, content={"score": 0})
+
+    # 此处保证 infer 完全执行结束并返回了结果
+    data = result.get("x0_traj_pdb", "")
+    # 把返回的大字符串按行拆开
+    lines = data.splitlines(keepends=True)
+
+    output_dir = "../client/static/data"
+    os.makedirs(output_dir, exist_ok=True)
+
+    header_lines = []
+    model_lines = []
+    model_count = 0
+    in_model = False
+
+
+    for line in lines:
+        if line.startswith("MODEL"):
+            in_model = True
+            model_lines = [line]
+        elif line.startswith("ENDMDL") and in_model:
+            model_lines.append(line)
+            model_count += 1
+            out_path = os.path.join(output_dir, f"f{model_count:03d}.pdb")
+            with open(out_path, "w") as fout:
+                fout.writelines(header_lines + model_lines)
+            in_model = False
+        else:
+            if in_model:
+                model_lines.append(line)
+            else:
+                header_lines.append(line)
+
+    # 根据需要返回前端信息
+    return {"model_count": model_count}
+
+
+# @app.post("/diffuse")
+# async def diffuse(response: Design):
+#     try:
+#         receptor = response.pdb_string
+#         print(receptor)
+#         # 使用 httpx 异步客户端调用 /infer 接口
+#         async with httpx.AsyncClient() as client:
+#             infer_response = await client.post(
+#                 "http://localhost:8000/infer",  # 如果两个接口在同一个服务上
+#                 json={"pdb_str": receptor}
+#             )
+#             result = infer_response.json()
+#             data = result.get("x0_traj_pdb", "")
+#             output_dir = "../client/static/data"
+#             model_lines = []
+#             model_count = 0
+#             for line in data:
+#                 if line.startswith('MODEL'):
+#                     model_lines = []
+#                 elif line.startswith('ENDMDL'):
+#                     model_lines.append(line)
+#                     model_count += 1
+#                     out_path = os.path.join(
+#                         output_dir, f'f{model_count:03d}.pdb'
+#                     )
+#                     with open(out_path, 'w') as fout:
+#                         # 写 header
+#                         if header_lines:
+#                             fout.writelines(header_lines)
+#                         # 写模型本体
+#                         fout.writelines(model_lines)
+#                     model_lines = []
+#                 else:
+#                     model_lines.append(line)
+#
+#
+#
+#     except Exception as e:
+#         print(e)
+#         return JSONResponse(content={"score": 0})
