@@ -145,6 +145,11 @@ df.dfRender = {
         scene = this.vrScene();
         // Camera
         camera = this.vrCamera();
+
+        // let scaleX = 1960 / window.innerWidth;
+        // let scaleY = 1080 / window.innerHeight;
+        // let scale = Math.min(scaleX, scaleY);
+        // renderer.xr.setFramebufferScaleFactor(scale);
         // 移动 Camera
         canon.add(camera);
         scene.add(canon);
@@ -226,7 +231,7 @@ df.dfRender = {
             let leftTempMatrix = new THREE.Matrix4();
             // df.tool.initPDBView(df.SelectedPDBId);
             const inputSources = renderer.xr.getSession().inputSources;
-            console.log(inputSources[1].handedness )
+            console.log(inputSources[1].handedness)
             if (inputSources && inputSources[1]) {
                 if (inputSources[1].hand && (inputSources[1].handedness === 'left')) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, leftControllerPointer.pointerObject);

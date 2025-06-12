@@ -216,8 +216,10 @@ df.actionManager = {
         let data = {
             'pdb_string': df.pdbText['4ulh'],
         };
+
         // submitAlign(data, url, df.ALIGN_LIGAND);
         data = JSON.stringify(data);
+        df.dfRender.clear(0);
         delete df.w3m.mol['4ulh'];
         df.api.apiRequest(url, data, (response) => {
             loadAllPDBs();
