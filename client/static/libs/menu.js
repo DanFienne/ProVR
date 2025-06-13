@@ -270,19 +270,19 @@ df.actionManager = {
         df.w3m.config.color_mode_main = 607;
         df.scale = 0.5;
 
-        // let url = window.location.href + 'diffuse';
-        // let data = {
-        //     'pdb_string': df.pdbText['4ulh'],
-        // };
-        //
+        let url = window.location.href + 'diffuse';
+        let data = {
+           'pdb_string': df.pdbText['4ulh'],
+        };
+        
         // // submitAlign(data, url, df.ALIGN_LIGAND);
-        // data = JSON.stringify(data);
-        // df.tool.clearTools(2);
-        // delete df.w3m.mol['4ulh'];
-        // df.api.apiRequest(url, data, (response) => {
-        //     loadAllPDBs();
-        // });
-        loadAllPDBs();
+        data = JSON.stringify(data);
+        df.tool.clearTools(2);
+        delete df.w3m.mol['4ulh'];
+        df.api.apiRequest(url, data, (response) => {
+           loadAllPDBs();
+        });
+        # loadAllPDBs();
     },
     closeMenu: function () {
         df.showMenu = false;
