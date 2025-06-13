@@ -293,6 +293,14 @@ function createStepIndicator(camera) {
 
     // 5) 返回更新函数
     return function updateStepText(step) {
+        // 当 step == 100 时隐藏精灵
+        if (step === 100) {
+            sprite.visible = false;
+            return;
+        } else {
+            sprite.visible = true;
+        }
+
         const text = `Step ${step}`;
         // 清空画布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -331,7 +339,6 @@ function createStepIndicator(camera) {
         texture.needsUpdate = true;
     };
 }
-
 // —————————————— 使用示例 ——————————————
 
 // 假设这里是你的全局 VR 相机
