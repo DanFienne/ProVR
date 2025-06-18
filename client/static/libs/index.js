@@ -6,6 +6,45 @@ import {camera, canon, scene} from "./render.js";
 import {createMenuButton} from "./menu.js";
 
 
+(function clearCacheOnFirstLoad() {
+    if (!localStorage.getItem('threejs_cache_cleared')) {
+        // 1. 清理 localStorage 和 sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 2. 清理 IndexedDB
+        if (window.indexedDB && indexedDB.databases) {
+            indexedDB.databases().then(dbs => {
+                dbs.forEach(db => {
+                    indexedDB.deleteDatabase(db.name);
+                });
+            });
+        }
+
+        // 3. 清理 Service Worker 缓存
+        if ('caches' in window) {
+            caches.keys().then(function (names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+
+        // 4. 注销 Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+
+        // 标记已清理
+        localStorage.setItem('threejs_cache_cleared', '1');
+    }
+})();
+
+
 // hide submenu
 function switchMenu(obj) {
     if (document.getElementById) {
@@ -30,7 +69,7 @@ df.rightRing = df.drawer.Ring();
 
 // 初始化menu菜单
 let menuOpen = false;
-df.drawer.createMenuButton();
+// df.drawer.createMenuButton();
 
 // for (let i in df.menuList) {
 //     let pos = new THREE.Vector3(0, -1, -4);
@@ -132,9 +171,9 @@ for (let i = 100; i >= 1; i--) {
 // 依次显示每个结构
 
 
-// df.loader.load('4ulh', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, '4ulh');
-//     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
+// df.loader.load('4oqw', 'name', function () {
+//     df.controller.drawGeometry(df.config.mainMode, '4oqw');
+// df.controller.drawGeometry(df.config.hetMode, '4ulh');
 // });
 // df.loader.load('4ulb', 'name', function () {
 //     df.controller.drawGeometry(df.config.mainMode, '4ulb');
@@ -287,7 +326,7 @@ function createStepIndicator(camera) {
     // 物理尺寸：宽 0.8m，高 0.3m
     sprite.scale.set(0.8, 0.3, 1);
     // 左上方、稍微往前
-    sprite.position.set(-1.0, 1.0, -1.5);
+    sprite.position.set(-0.8, 0.8, -2);
 
     camera.add(sprite);
 
@@ -301,7 +340,7 @@ function createStepIndicator(camera) {
             sprite.visible = true;
         }
 
-        const text = `Step ${step}`;
+        const text = step;
         // 清空画布
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -339,6 +378,8 @@ function createStepIndicator(camera) {
         texture.needsUpdate = true;
     };
 }
+
+
 // —————————————— 使用示例 ——————————————
 
 // 假设这里是你的全局 VR 相机

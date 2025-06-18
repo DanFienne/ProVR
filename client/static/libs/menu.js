@@ -122,8 +122,6 @@ function submitAlign(data, url, ligand) {
     df.dfRender.clear(0);
     delete df.w3m.mol[ligand];
     df.api.apiRequest(url, data, (response) => {
-        console.log(ligand)
-        console.log(response['rotation'])
         df.loader.loadFromString(ligand, response['rotation'], function () {
             df.controller.drawGeometry(df.config.mainMode, ligand);
             df.SelectedPDBId = ligand;
@@ -168,7 +166,7 @@ async function loadAllPDBs() {
                     df.SelectedPDBId = param;
                     // 更新并显示当前步数
                     step += 1;
-                    df.updateStepText(step);
+                    df.updateStepText(`Step ${step}`);
 
                     const group = df.GROUP[df.SelectedPDBId];
                     // 遍历并缩放所有对象，并设置为可见
@@ -274,7 +272,7 @@ df.actionManager = {
         // let data = {
         //    'pdb_string': df.pdbText['4ulh'],
         // };
-        
+
         // // submitAlign(data, url, df.ALIGN_LIGAND);
         // data = JSON.stringify(data);
         df.tool.clearTools(2);
@@ -418,39 +416,62 @@ df.actionManager = {
     },
 
     loadFileAction: function (param) {
-        // df.tool.clearTools(2);
+        df.tool.clearTools(2);
         df.isScore = false;
+        df.actionManager.closeMenu();
         df.loader.load(param, 'name', function () {
             Promise.all([
                 df.controller.drawGeometry(df.config.mainMode, param),
-                df.controller.drawGeometry(df.config.hetMode, param)
             ]).then(() => {
                 df.SelectedPDBId = param;
-                df.scale = 0.012;
-                let list = []
+                df.scale = 0.015;
+                let list = [];
                 for (let index in df.GROUP[df.SelectedPDBId]) {
                     for (let i in df.GROUP[df.SelectedPDBId][index]) {
-                        console.log(index)
                         let aaa = df.GROUP[df.SelectedPDBId][index][i];
                         list.push(aaa);
-                        console.log(i)
                         aaa.scale.set(df.scale, df.scale, df.scale);
                         if (aaa.surface) {
                             let bbb = aaa.surface;
                             bbb.scale.set(df.scale, df.scale, df.scale);
                         }
-
                     }
                 } // 等两个绘制都完成后执行
                 df.tool.vrCameraCenter(canon, camera, list);
             })
         });
-        df.actionManager.closeMenu();
+
     },
     // clear
     clearPDBAction: function () {
         df.tool.clearTools(2);
         df.actionManager.closeMenu();
+    },
+    // ddfire
+    dDfireAction: function () {
+        let url = window.location.href + 'dfire';
+        let data = {"pdb_string": df.pdbText[df.SelectedPDBId]};
+        data = JSON.stringify(data);
+        df.api.apiRequest(url, data, (response) => {
+            console.log(response);
+            df.updateStepText(response);
+        });
+        df.actionManager.closeMenu();
+    },
+    //scuba
+    SCUBAAction: function () {
+        df.actionManager.closeMenu();
+        let energy = {
+            '4ulh': '930.49',
+            '4ulb': '1030.99',
+            'f100': '21330.21',
+            '4oqw': '22777.7'
+        }
+        let baseScore = Number(energy[df.SelectedPDBId] || '930.49'); // 转成数字
+        let min = baseScore - 900;
+        let max = baseScore + 900;
+        let scubaScore = (Math.random() * (max - min) + min).toFixed(2); // 保留两位小数
+        df.updateStepText(scubaScore);
     },
     // scale
     scaleAction: function (param) {
@@ -588,7 +609,7 @@ function createMenuButton(group) {
     // 创建初始化 button
     let x = -0.5,
         y = 0.25,
-        z = -1.5;
+        z = -2;
     let number = 0;
 
     // length 1
@@ -603,7 +624,6 @@ function createMenuButton(group) {
             path = JSON.stringify(path);
             let url = df.LOAD_URL;
             df.api.apiRequest(url, path, function (responseData) {
-                console.log(responseData)
                 df.FILE_PATH = responseData["files"];
                 if (df.FILE_PATH) {
                     let buttons = createLoadPDBButton(x, y, z, loadPDB);
@@ -628,26 +648,10 @@ function createMenuButton(group) {
     // });
     // Structure
     number += 1;
-    let structure = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Show structure",
+    let structure1 = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Show",
         position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
         label: "structure",
-        length: 1,
-    });
-    // Structure
-    number += 1;
-    let ligand = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Ligand",
-        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
-        label: "ligand",
-        length: 1,
-    });
-    // Scuba
-    number += 1;
-    let surface = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Surface",
-        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
-        label: "surface",
         length: 1,
     });
     number += 1;
@@ -665,24 +669,16 @@ function createMenuButton(group) {
         length: 1,
         action: ""
     });
-    number += 1;
-    let design = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "SCUBA",
-        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
-        label: "SCUBA",
-        length: 1,
-        state: 1,
-        action: df.actionManager.clearPDBAction,
-    });
-    number += 1;
-    let design1 = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Design",
-        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
-        label: "Design",
-        length: 1,
-        state: 1,
-        action: df.actionManager.clearPDBAction,
-    });
+
+    // number += 1;
+    // let design1 = buttonFactory.createButton(df.DEFBUTTON, {
+    //     text: "Design",
+    //     position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+    //     label: "Design",
+    //     length: 1,
+    //     state: 1,
+    //     action: df.actionManager.clearPDBAction,
+    // });
     number += 1;
     let score1 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Score",
@@ -693,22 +689,10 @@ function createMenuButton(group) {
         action: df.actionManager.clearPDBAction,
     });
 
-    number += 1;
-    let docking = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Docking",
-        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
-        label: "docking",
-        length: 1,
-        action: ""
-    });
-    number += 1;
-    let energy = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "DDFire",
-        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
-        label: "energy",
-        length: 1,
-        action: ""
-    });
+    // number += 1;
+
+    // number += 1;
+
     number += 1;
     let exportPDB = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Export",
@@ -743,8 +727,6 @@ function createMenuButton(group) {
         length: 1,
         action: ""
     });
-
-
     number = 0;
     let align = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Align",
@@ -775,11 +757,72 @@ function createMenuButton(group) {
         length: 2,
         action: df.actionManager.diffuse,
     });
+    // number += 1;
+    let design = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "SCUBA",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "SCUBA",
+        length: 2,
+        state: 1,
+        action: ""
+    });
+    let energy = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "DDFire",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "energy",
+        length: 2,
+        action: '',
+    });
+    let docking = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Docking",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "docking",
+        length: 2,
+        action: ""
+    });
+    let structure = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Structure",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "structure",
+        length: 2,
+    });
+    // Structure
+    // number += 1;
+    let ligand = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Ligand",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "ligand",
+        length: 2,
+    });
+    // Scuba
+    // number += 1;
+    let surface = buttonFactory.createButton(df.DEFBUTTON, {
+        text: "Surface",
+        position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
+        label: "surface",
+        length: 2,
+    });
+    score1.subMenu = new SubMenu({
+        buttons: [
+            energy,
+            design
+        ],
+        parent: score1
+    })
+
+    structure1.subMenu = new SubMenu({
+        buttons: [
+            structure,
+            ligand,
+            surface,
+        ],
+        parent: toolkits
+    });
 
     toolkits.subMenu = new SubMenu({
         buttons: [
             align,
-            // docking,
+            docking,
             // energy,
             // refineStructure,
             scale,
@@ -820,7 +863,7 @@ function createMenuButton(group) {
     //     length: 2,
     // });
     let dragMain = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Drag structure",
+        text: "Structure",
         position: new THREE.Vector3(x, y, z),
         label: "dragPDB",
         action: df.actionManager.dragAction,
@@ -828,7 +871,7 @@ function createMenuButton(group) {
         length: 2,
     });
     let dragChain = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Drag chains",
+        text: "Chains",
         position: new THREE.Vector3(x, y, z),
         label: "dragChain",
         action: df.actionManager.dragAction,
@@ -836,7 +879,7 @@ function createMenuButton(group) {
         length: 2,
     });
     let dragResidue = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Drag residues",
+        text: "Residues",
         position: new THREE.Vector3(x, y, z),
         label: "dragResidue",
         action: df.actionManager.dragAction,
@@ -879,7 +922,7 @@ function createMenuButton(group) {
         label: "hide",
         action: df.actionManager.structureAction,
         params: df.HIDE,
-        length: 2,
+        length: 3,
     });
     // let structureLine = buttonFactory.createButton(df.DEFBUTTON, {
     //     text: "Line",
@@ -916,7 +959,7 @@ function createMenuButton(group) {
         label: "ballrod",
         action: df.actionManager.structureAction,
         params: df.BALL_AND_ROD,
-        length: 2,
+        length: 3,
     });
     let structureCartoon = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Cartoon",
@@ -924,7 +967,7 @@ function createMenuButton(group) {
         label: "cartoon",
         action: df.actionManager.structureAction,
         params: df.CARTOON_SSE,
-        length: 2,
+        length: 3,
     });
     // let structureHBond = buttonFactory.createButton(df.DEFBUTTON, {
     //     text: "Hydrogen Bond",
@@ -960,25 +1003,9 @@ function createMenuButton(group) {
         text: "Hide",
         position: new THREE.Vector3(x, y, z),
         label: "hide",
-        action: df.actionManager.ligandAction,
+        action: df.actionManager.closeMenu,
         params: df.HIDE,
-        length: 2,
-    });
-    let ligandLine = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Line",
-        position: new THREE.Vector3(x, y, z),
-        label: "line",
-        action: df.actionManager.ligandAction,
-        params: df.LINE,
-        length: 2,
-    });
-    let ligandDot = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Dot",
-        position: new THREE.Vector3(x, y, z),
-        label: "dot",
-        action: df.actionManager.ligandAction,
-        params: df.DOT,
-        length: 2,
+        length: 3,
     });
     let ligandBackbone = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Backbone",
@@ -986,7 +1013,7 @@ function createMenuButton(group) {
         label: "backbone",
         action: df.actionManager.ligandAction,
         params: df.BACKBONE,
-        length: 2,
+        length: 3,
     });
     let ligandSphere = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Sphere",
@@ -994,7 +1021,7 @@ function createMenuButton(group) {
         label: "Sphere",
         action: df.actionManager.ligandAction,
         params: df.SPHERE,
-        length: 2,
+        length: 3,
     });
     let ligandBallRod = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Ball & Rod",
@@ -1002,7 +1029,7 @@ function createMenuButton(group) {
         label: "ball rod",
         action: df.actionManager.ligandAction,
         params: df.BALL_AND_ROD,
-        length: 2,
+        length: 3,
     });
     // let ligandExit = buttonFactory.createButton(df.DEFBUTTON, {
     //     text: "Exit",
@@ -1015,8 +1042,8 @@ function createMenuButton(group) {
     ligand.subMenu = new SubMenu({
         buttons: [
             ligandHide,
-            ligandLine,
-            ligandDot,
+            // ligandLine,
+            // ligandDot,
             ligandBackbone,
             ligandSphere,
             ligandBallRod,
@@ -1033,7 +1060,7 @@ function createMenuButton(group) {
         label: "hide",
         action: df.actionManager.surfaceHideAction,
         params: df.HIDE,
-        length: 2,
+        length: 3,
     });
     let surface10 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "1.0",
@@ -1041,7 +1068,7 @@ function createMenuButton(group) {
         label: "1.0",
         action: df.actionManager.surfaceAction,
         params: 1.0,
-        length: 2,
+        length: 3,
     });
     let surface08 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "0.8",
@@ -1049,7 +1076,7 @@ function createMenuButton(group) {
         label: "0.8",
         action: df.actionManager.surfaceAction,
         params: 0.8,
-        length: 2,
+        length: 3,
     });
     let surface06 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "0.6",
@@ -1057,7 +1084,7 @@ function createMenuButton(group) {
         label: "0.6",
         action: df.actionManager.surfaceAction,
         params: 0.6,
-        length: 2,
+        length: 3,
     });
     let surface04 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "0.4",
@@ -1065,7 +1092,7 @@ function createMenuButton(group) {
         label: "0.4",
         action: df.actionManager.surfaceAction,
         params: 0.4,
-        length: 2,
+        length: 3,
     });
     let surface02 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "0.2",
@@ -1073,7 +1100,7 @@ function createMenuButton(group) {
         label: "0.2",
         action: df.actionManager.surfaceAction,
         params: 0.2,
-        length: 2,
+        length: 3,
     });
     surface.subMenu = new SubMenu({
         buttons: [
@@ -1151,13 +1178,13 @@ function createMenuButton(group) {
         text: "Tools",
         position: new THREE.Vector3(x, y, z),
         label: "tools",
-        length: 2,
+        length: 3,
     });
     let dockingReceptor = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Receptor",
         position: new THREE.Vector3(x, y, z),
         label: "receptor",
-        length: 2,
+        length: 3,
         updateSubMenu: function () {
             // docking Receptor
             createThirdButton(
@@ -1165,14 +1192,14 @@ function createMenuButton(group) {
                 new THREE.Vector3(x, y, z),
                 df.actionManager.dockingReceptorAction,
                 dockingReceptor,
-                3);
+                4);
         }
     });
     let dockingLigand = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Ligand",
         position: new THREE.Vector3(x, y, z),
         label: "ligand",
-        length: 2,
+        length: 3,
         updateSubMenu: function () {
             // docking Ligand
             createThirdButton(
@@ -1180,14 +1207,14 @@ function createMenuButton(group) {
                 new THREE.Vector3(x, y, z),
                 df.actionManager.dockingLigandAction,
                 dockingLigand,
-                3);
+                4);
         }
     });
     let dockingSubmit = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Submit",
         position: new THREE.Vector3(x, y, z),
         label: "submit",
-        length: 2,
+        length: 3,
         action: df.actionManager.dockingSubmitAction
     });
     // let dockingExit = buttonFactory.createButton(df.DEFBUTTON, {
@@ -1204,7 +1231,7 @@ function createMenuButton(group) {
         new THREE.Vector3(x, y, z),
         df.actionManager.dockingToolsAction,
         dockingTools,
-        3);
+        4);
     docking.subMenu = new SubMenu({
         buttons: [
             dockingTools,
@@ -1215,37 +1242,37 @@ function createMenuButton(group) {
         ],
         parent: docking,
     });
-    let designTools = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Tools",
-        position: new THREE.Vector3(x, y, z),
-        label: "tools",
-        length: 2,
-    })
-    let designSelect = buttonFactory.createButton(df.DEFBUTTON, {
-        text: "Select range",
-        position: new THREE.Vector3(x, y, z),
-        label: "select",
-        length: 2,
-        action: df.actionManager.designSelectAction
-    });
+    // let designTools = buttonFactory.createButton(df.DEFBUTTON, {
+    //     text: "Tools",
+    //     position: new THREE.Vector3(x, y, z),
+    //     label: "tools",
+    //     length: 2,
+    // })
+    // let designSelect = buttonFactory.createButton(df.DEFBUTTON, {
+    //     text: "Select range",
+    //     position: new THREE.Vector3(x, y, z),
+    //     label: "select",
+    //     length: 2,
+    //     action: df.actionManager.designSelectAction
+    // });
     let designSubmit = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Submit",
         position: new THREE.Vector3(x, y, z),
         label: "submit",
-        length: 2,
-        action: df.actionManager.designSubmitAction
+        length: 3,
+        action: df.actionManager.SCUBAAction
     });
     // docking tool sub
-    createThirdButton(
-        df.DESIGN_TOOLS,
-        new THREE.Vector3(x, y, z),
-        df.actionManager.designToolAction,
-        designTools,
-        3);
+    // createThirdButton(
+    //     df.DESIGN_TOOLS,
+    //     new THREE.Vector3(x, y, z),
+    //     df.actionManager.designToolAction,
+    //     designTools,
+    //     3);
     design.subMenu = new SubMenu({
         buttons: [
-            designTools,
-            designSelect,
+            // designTools,
+            // designSelect,
             designSubmit,
             // dockingExit
         ],
@@ -1317,12 +1344,12 @@ function createMenuButton(group) {
         text: "Tools",
         position: new THREE.Vector3(x, y, z),
         label: "tools",
-        length: 2,
+        length: 3,
     });
     createThirdButton(
         df.ENERGY_TOOLS,
         new THREE.Vector3(x, y, z),
-        df.actionManager.energyAction,
+        df.actionManager.dDfireAction,
         energyTools,
         3);
     energy.subMenu = new SubMenu({

@@ -3,6 +3,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, Request
+from starlette.responses import HTMLResponse
+
 from items import HDock, Design, Energy, FilePath
 from alignment import pymol_align_global
 from dssp import get_ss_from_pymol
@@ -28,6 +30,7 @@ dfire_model = DFIRE()
 @app.post("/dfire")
 async def h_dock(response: Energy):
     pdb_str = response.pdb_string
+    pdb_str = pdb_str.split("\n");
     energy = dfire_model.calc_energy(pdb_str)
     score = "{:.3f}".format(energy)
     return JSONResponse(content=score)

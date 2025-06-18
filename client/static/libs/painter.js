@@ -191,9 +191,9 @@ df.painter = {
             case df.CARTOON_SSE:
                 df.painter.showCartoonSSEByResidue(pdbId, chainId, resId);
                 break;
-            case df.CARTOON_SSE:
-                df.painter.showCartoonSSEByResidue(pdbId, chainId, resId);
-                break;
+            // case df.CARTOON_SSE:
+            //     df.painter.showCartoonSSEByResidue(pdbId, chainId, resId);
+            //     break;
         }
     },
     // show Ball & Rod
@@ -433,6 +433,7 @@ df.painter = {
                 if (w3m.mol[pdbId].residueData[chainId][residueKeys[resInd - 1]] === undefined) {
                     df.drawer.drawSphere(pdbId, 'main', caAtom.chainName, path[0], caAtom.color, radius, caAtom, w);
                     df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].visible = true;
+                    df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].ssc = type;
                 }
                 if (preResidue !== undefined && residueKeys[resInd - 1] !== undefined) {
                     if (customCompare(residueKeys[resInd - 1], resId) === -1) {
@@ -446,11 +447,13 @@ df.painter = {
                 path, radius, caAtom.color, caAtom, pdbId, 'main', caAtom.chainName
             );
             df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].visible = true;
+            df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].ssc = type;
         }
         if (type === 'BODY') {
             if (w3m.mol[pdbId].residueData[chainId][residueKeys[resInd + 1]] === undefined && (path.length - 1) > 0) {
                 df.drawer.drawSphere(pdbId, 'main', caAtom.chainName, path[path.length - 1], caAtom.color, radius, caAtom, w);
                 df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].visible = true;
+                df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].ssc = type;
             }
         }
     },
@@ -471,6 +474,7 @@ df.painter = {
                 caId,
                 cubeData.tangents.length - 1);
             df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].visible = true;
+            df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].ssc = 'helix'
         }
         return undefined;
     },
@@ -531,6 +535,7 @@ df.painter = {
         let caAtom = df.tool.getMainAtom(pdbId, residue.caid);
         df.drawer.drawArrowByPaths(pdbId, 'main', caAtom.chainName, arrow, caAtom.color, residue.caid);
         df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].visible = true;
+        df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].ssc = 'arrow';
     },
     showCartoonSSEByResidue: function (pdbId, chainId, resId) {
         let residue = w3m.mol[pdbId].residueData[chainId][resId];

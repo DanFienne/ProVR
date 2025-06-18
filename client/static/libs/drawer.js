@@ -379,7 +379,7 @@ df.drawer = {
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         // text
-        context.font = 'Bold 250px "SAO"';
+        context.font = 'Bold 500px "SAO"';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         context.fillStyle = 'white'; // 文本颜色
