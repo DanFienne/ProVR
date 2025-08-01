@@ -46,6 +46,7 @@ dfire_model = DFIRE()
 @app.post("/dfire")
 async def h_dock(response: Energy):
     pdb_str = response.pdb_string
+    pdb_str = pdb_str.split("\n");
     energy = dfire_model.calc_energy(pdb_str)
     score = "{:.3f}".format(energy)
     return JSONResponse(content=score)
@@ -213,6 +214,7 @@ async def diffuse(request: Design):
     model_lines = []
     model_count = 0
     in_model = False
+
 
     for line in lines:
         if line.startswith("MODEL"):

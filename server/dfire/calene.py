@@ -77,7 +77,6 @@ class DFIRE(object):
 
         number_atom = len(atom_id)
         print(number_atom)
-
         eall = 0.
 
         for i in range(number_atom):
@@ -94,3 +93,19 @@ class DFIRE(object):
 
         return eall
 
+if __name__ == "__main__":
+    # 指定你的dfire_pair.lib和pdb文件路径
+    dfire_pair_path = "dfire_pair.lib"
+    pdb_path = "4ulh.pdb"  # <- 修改为你的pdb文件路径
+
+    # 初始化DFIRE对象
+    dfire = DFIRE(dfire_pair=dfire_pair_path)
+
+    # 读取pdb文件内容
+    with open(pdb_path, "r") as f:
+        pdb_lines = f.readlines()
+
+    # 计算能量
+    energy = dfire.calc_energy(pdb_lines)
+
+    print("DFIRE Energy:", energy)

@@ -26,6 +26,9 @@ function objectTransform(object, controller, tempMatrix) {
                     if (df.config.mainMode === df.BALL_AND_ROD) {
                         controller.attach(object);
                     } else {
+                        if ((object.ssc !== 'BODY') && (df.selection === df.select_residue)) {
+                            return;
+                        }
                         console.log(object)
                         df.SELECTED_RESIDUE = object;
                         df.SELECTED_RESIDUE.visible = false;
@@ -121,14 +124,14 @@ function onTriggerDown(event, raster, tempMatrix, objects) {
     let controller = event.target;
 
     // open menu
-    let menuList = getIntersections(objects, raster, tempMatrix, true);
-    let menuObject = menuList[0]
-    if (menuObject.length > 0) {
-        df.showMenu = !df.showMenu;
-        df.GROUP['menu'].visible = df.showMenu;
-        // df.GROUP['menu'].lookAt(camera.position)
-        return;
-    }
+    // let menuList = getIntersections(objects, raster, tempMatrix, true);
+    // let menuObject = menuList[0]
+    // if (menuObject.length > 0) {
+    //     df.showMenu = !df.showMenu;
+    //     df.GROUP['menu'].visible = df.showMenu;
+    //     // df.GROUP['menu'].lookAt(camera.position)
+    //     return;
+    // }
     // 操作 Menu 模块
     if (df.showMenu) {
         let menuList = getIntersections(objects, raster, tempMatrix);

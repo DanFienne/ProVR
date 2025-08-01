@@ -3,6 +3,17 @@ import {df} from './core.js';
 import {w3m} from "./web3D/w3m.js";
 import {scene} from "./render.js";
 
+
+function getUniquePdbId(baseId, loadedSet) {
+    let pdbId = baseId;
+    let i = 1;
+    while (loadedSet.has(pdbId)) {
+        pdbId = baseId + '_' + i;
+        i++;
+    }
+    return pdbId;
+}
+
 df.loader = {
     load: function (file, type, callback) {
         let pdbId;
@@ -13,6 +24,8 @@ df.loader = {
                 if (!pdbId) {
                     pdbId = 'yang'
                 }
+                pdbId = getUniquePdbId(pdbId, df.loadedPdbIds);
+                df.loadedPdbIds.add(pdbId);
                 this.loadTextFromPDB(pdbId, file, this.callBackLoading, callback);
                 break;
             case 'name':
@@ -21,6 +34,8 @@ df.loader = {
                 if (!pdbId) {
                     pdbId = 'yang'
                 }
+                pdbId = getUniquePdbId(pdbId, df.loadedPdbIds);
+                df.loadedPdbIds.add(pdbId);
                 this.loadTextFromRequest(pdbId, file, this.callBackLoading, callback);
                 break;
         }

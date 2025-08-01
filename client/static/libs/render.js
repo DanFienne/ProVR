@@ -179,21 +179,21 @@ df.dfRender = {
         renderer.xr.addEventListener('sessionstart', () => {
             // df.scale = 0.1;
             // df.scale = 0.005;
-            let list = []
-            for (let argumentsKey in df.pdbText) {
-                for (let index in df.GROUP[argumentsKey]) {
-                    for (let i in df.GROUP[argumentsKey][index]) {
-                        let aaa = df.GROUP[argumentsKey][index][i];
-                        list.push(aaa);
-                        aaa.scale.set(df.scale, df.scale, df.scale);
-                        if (aaa.surface) {
-                            let bbb = aaa.surface;
-                            bbb.scale.set(df.scale, df.scale, df.scale);
-                        }
-                    }
-                }
-            }
-            df.tool.vrCameraCenter(canon, camera, list);
+            // let list = []
+            // for (let argumentsKey in df.pdbText) {
+            //     for (let index in df.GROUP[argumentsKey]) {
+            //         for (let i in df.GROUP[argumentsKey][index]) {
+            //             let aaa = df.GROUP[argumentsKey][index][i];
+            //             list.push(aaa);
+            //             aaa.scale.set(df.scale, df.scale, df.scale);
+            //             if (aaa.surface) {
+            //                 let bbb = aaa.surface;
+            //                 bbb.scale.set(df.scale, df.scale, df.scale);
+            //             }
+            //         }
+            //     }
+            // }
+            // df.tool.vrCameraCenter(canon, camera, list);
 
             isImmersive = true;
         });
@@ -202,20 +202,20 @@ df.dfRender = {
         });
 
         // xr
-        leftController = this.createController(renderer, canon, 1);
-        rightController = this.createController(renderer, canon, 0);
+        leftController = this.createController(renderer, canon, 0);
+        rightController = this.createController(renderer, canon, 1);
         leftRayCaster = new THREE.Raycaster();
         leftRayCaster.camera = camera;
         rightRayCaster = new THREE.Raycaster();
         rightRayCaster.camera = camera;
 
         // Hand
-        leftHand = this.createHandController(renderer, canon, 1);
-        rightHand = this.createHandController(renderer, canon, 0);
+        leftHand = this.createHandController(renderer, canon, 0);
+        rightHand = this.createHandController(renderer, canon, 1);
 
         let controllerModelFactory = new XRControllerModelFactory();
-        leftControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 1);
-        rightControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 0);
+        leftControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 0);
+        rightControllerGrip = this.createControllerGrip(renderer, canon, controllerModelFactory, 1);
         const leftControllerPointer = new OculusHandPointerModel(leftHand, leftController);
         const rightControllerPointer = new OculusHandPointerModel(rightHand, rightController);
         leftHand.add(leftControllerPointer);
@@ -231,16 +231,25 @@ df.dfRender = {
             let leftTempMatrix = new THREE.Matrix4();
             // df.tool.initPDBView(df.SelectedPDBId);
             const inputSources = renderer.xr.getSession().inputSources;
-            console.log(inputSources[1].handedness)
-            if (inputSources && inputSources[1]) {
-                if (inputSources[1].hand && (inputSources[1].handedness === 'left')) {
+            console.log(inputSources[0].handedness)
+            if (inputSources && inputSources[0]) {
+                if (inputSources[0].hand && (inputSources[1].handedness === 'left')) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, leftControllerPointer.pointerObject);
-                } else if (inputSources[1].gamepad) {
+                } else if (inputSources[0].gamepad) {
                     onTriggerDown(event, leftRayCaster, leftTempMatrix, event.target);
                 }
             }
             // df.tool.vrCameraCenter(canon, df.GROUP['1cbs']['main']['a'].children[10]);
         });
+
+
+        leftController.addEventListener('connected', function (event) {
+            if (event.data && event.data.gamepad) {
+                addButtonLabelsToController(leftController);
+            }
+        });
+
+
         rightController.addEventListener('selectstart', function (event) {
             let rightTempMatrix = new THREE.Matrix4();
             const inputSources = renderer.xr.getSession().inputSources;
@@ -311,8 +320,6 @@ df.dfRender = {
                             df.tool.changeFrame(molId, meshId);
                             df.dfRender.clear(0);
                             // 重新生成 residue 结构
-
-                            console.log(df.SelectedPDBId);
                             df.painter.showAllResidues(df.config.mainMode, df.SelectedPDBId);
                             // df.controller.drawGeometry(df.config.mainMode, df.SelectedPDBId);
                             for (let i in df.GROUP[df.SelectedPDBId]['main']) {
@@ -320,6 +327,10 @@ df.dfRender = {
                                 aaa.scale.set(df.scale, df.scale, df.scale);
                                 // df.tool.vrCameraCenter(camera, aaa.children[10]);
                             }
+                        }
+                    } else {
+                        if (df.config.mainMode === df.CARTOON_SSE) {
+
                         }
                     }
                 }
@@ -420,6 +431,15 @@ df.dfRender = {
                                 togglePause();
                             }
                             btn._prev = btn.pressed;
+
+
+                            // 处理A键（如 buttons[0]），用于菜单显示/隐藏
+                            const aBtn = gp.buttons[4];
+                            if (aBtn.pressed && !aBtn._prev) {
+                                df.showMenu = !df.showMenu;
+                                df.GROUP['menu'].visible = df.showMenu;
+                            }
+                            aBtn._prev = aBtn.pressed;
                         }
                     }
                 }
@@ -535,6 +555,70 @@ function togglePause() {
             df._resumeResolve = null;
         }
     }
+}
+
+
+// 优化后的标签生成函数
+function createLabel(text, color = '#fff', outline = true) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 字体阴影/描边增强可读性
+    if (outline) {
+        ctx.shadowColor = 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 6;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#222';
+    }
+
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 描边
+    if (outline) {
+        ctx.strokeText(text, 128, 40);
+    }
+    // 主体
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 128, 40);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({map: texture, transparent: true});
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(0.15, 0.045, 1); // 字体更大
+    return sprite;
+}
+
+// 设计师建议的配色
+const COLOR_CONFIRM = '#00eaff'; // 明亮蓝色
+const COLOR_PAUSE = '#ffe066';   // 柠檬黄
+const COLOR_MENU = '#ff4d4f';    // 鲜明红
+
+function addButtonLabelsToController(controller) {
+    // 按钮0（Trigger/确认键）
+    const confirmLabel = createLabel('食指确认', COLOR_CONFIRM);
+    // 按钮1（Grip/暂停键）
+    const pauseLabel = createLabel('中指暂停', COLOR_PAUSE);
+    // 按钮4（Y/菜单键，左手柄为Y，右手柄为B，可根据手柄类型调整）
+    const menuLabel = createLabel('菜单（X）', COLOR_MENU);
+
+    // 位置建议（可根据实际手柄微调）
+    confirmLabel.position.set(0, 0.03, -0.03);   // trigger下方
+    pauseLabel.position.set(-0.08, 0.01, 0.05);         // grip侧面
+    menuLabel.position.set(-0.05, 0.08, 0.03);
+    controller.add(confirmLabel);
+    controller.add(pauseLabel);
+    controller.add(menuLabel);
+
+    // 控制显示/隐藏
+    controller.userData.confirmLabel = confirmLabel;
+    controller.userData.pauseLabel = pauseLabel;
+    controller.userData.menuLabel = menuLabel;
 }
 
 window.df = df;

@@ -199,7 +199,7 @@ df.tool = {
 
         }
         let center = totalBox.getCenter(new THREE.Vector3());
-        // console.log(center)
+        console.log(center)
         // distance
         let distance = 0.5;
         let cameraPosition = new THREE.Vector3(center.x - camera.position.x, center.y - camera.position.y, center.z - camera.position.z + distance);
@@ -499,7 +499,8 @@ df.tool = {
     clearTools: function (mode) {
         // 1. 全局缓存：避免重复创建纹理/材质
         df.textSpriteCache = new Map();
-// 2. 存储所有需要更新的球体 + 对应精灵
+        df.loadedPdbIds = new Set();
+        // 2. 存储所有需要更新的球体 + 对应精灵
         df.numberedSpheres = [];
         THREE.Cache.clear();
         switch (mode) {
@@ -550,5 +551,4 @@ df.tool = {
         df.pdbText = {}
         df.pdbContent = {}
     },
-
 }

@@ -104,12 +104,12 @@ df = {
     menuList: ["Load PDB", "Protein", "Sequence", "PDB"],
     SequenceMenuList: ["tools"],
     // menu text config
-    textMenuWidth: 0.36,
-    textMenuHeight: 0.09,
+    textMenuWidth: 0.72,
+    textMenuHeight: 0.18,
     textContentWidth: 2048,
     textContentHeight: 512,
-    letterSpacing: 0.01,
-    lineSpacing: 0.45,
+    letterSpacing: 0.02,
+    lineSpacing: 0.9,
 
     scale: 0.05,
 
@@ -145,6 +145,7 @@ df = {
     // text
     lfpt: "",
     rtpt: "",
+    loadedPdbIds: new Set(),
 
     // representation Mode
     HIDE: 0,
