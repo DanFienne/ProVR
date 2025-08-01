@@ -591,6 +591,7 @@ function createMenuButton(group) {
         z = -1.5;
     let number = 0;
 
+
     // length 1
     // load button
     let loadPDB = buttonFactory.createButton(df.DEFBUTTON, {
@@ -599,16 +600,37 @@ function createMenuButton(group) {
         label: "",
         length: 1,
         updateSubMenu: function () {
-            let path = {'filePath': df.DATA_PATH};
-            path = JSON.stringify(path);
-            let url = df.LOAD_URL;
-            df.api.apiRequest(url, path, function (responseData) {
-                console.log(responseData)
-                df.FILE_PATH = responseData["files"];
+            function parseJwt(t) {
+                return JSON.parse(atob(t.split('.')[1]));
+            }
+
+            if (!localStorage.token) {
+                location.href = "/";
+            }
+
+            /* ───── 获取文件列表 ───── */
+            const uid = parseJwt(localStorage.token).uid;
+            const hdr = {"Authorization": "Bearer " + localStorage.token};
+            const PRIVATE_ROOT = `/user-files/${uid}/`;
+            let url = df.LOAD_URL;// 例如 /user-files/3/
+
+            async function fillFiles() {
+                const r = await fetch(df.LOAD_URL, {headers: hdr});
+                if (!r.ok) {
+                    localStorage.removeItem("token");
+                    location.href = "/";
+                    return
+                }
+                return await r.json();
+            }
+
+            fillFiles().then(arr => {
+                df.remoteUrl = [PRIVATE_ROOT];
+                df.FILE_PATH = arr;
                 if (df.FILE_PATH) {
                     let buttons = createLoadPDBButton(x, y, z, loadPDB);
                 }
-            });
+            })
         },
     });
     // Drag

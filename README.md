@@ -13,8 +13,16 @@ ProVR 是一个基于 Three.js 开发的先进蛋白质设计工具，旨在为�
 ### 为什么选择 ProVR？
 ProVR 因其致力于提供一个易于访问、用户友好的平台，将 VR 的强大功能带给研究人员和生物学家而脱颖而出。通过消除传统软件的障碍，并使用户能够实时与复杂的分子结构互动，ProVR 赋予用户推动科学发现和创新的能力。
 
-## News
+## 在线体验
+[ProVR](https://github.com/your-repo/webxr-app)
 
+## 适用设备
+* Pico 4 Ultra
+* Pico 4
+* Oculus quest 3
+* Oculus quest 2
+
+建议使用最新版 Chrome、Edge、Firefox 浏览器，获得最佳体验。
 
 ## Documentation
 

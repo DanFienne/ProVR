@@ -28,7 +28,7 @@ df = {
     // context load button
     FILE_PATH: [],
     DATA_PATH: '../client/static/data',
-    LOAD_URL: window.location.href + 'load_file_path',
+    LOAD_URL: '/api/my-files',
 
     // delete pdb mesh
 

@@ -69,23 +69,26 @@ uvicorn app:app --host ip_address --port port
 
 ## Geting Start VR Mode
 
-VR设备：
+### 适用设备
+本软件兼容以下主流VR设备型号
 
-| Oculus Quest                                                        |
-|:--------------------------------------------------------------------|
-| <img src="images/gamepad.png" alt="Cate" width="400" height="auto"> |
-| <img src="images/quest.jpg" alt="Cate" width="400" height="auto">   |
+| Oculus Quest 3 / Oculus Quest 2                                     | Pico 4 / Pico 4 Ultra |
+|:--------------------------------------------------------------------|-----------------------|
+| <img src="images/gamepad.png" alt="Cate" width="400" height="auto"> |   <img src="images/pico4shoubing.png" alt="Cate" width="400" height="auto">   |
+| <img src="images/quest.jpg" alt="Cate" width="400" height="auto">   |          <img src="images/pico.jpeg" alt="Cate" width="400" height="auto"> |
 
 ### Enter VR Scene
 
-首先：VR程序启动，需要一个支持WebXR的浏览器。例如Google Chrome、Microsoft Edge、Firefox Reality等。
+首先：VR程序启动，需要一个支持WebXR的浏览器。
+
+例如Google Chrome、Microsoft Edge、Firefox Reality等。
 
 点击屏幕上`ENTER VR`按钮，进入VR模式。如图：
 ![ENTER VR](images/img.png)
 
 ### VR Menu
 
-点击VR屏幕中的<img src="images/cate.png" alt="Cate" width="25" height="auto">,弹出VR中的菜单，实现VR的功能交互：
+点击VR屏幕中的<img src="images/cate.png" alt="Cate" width="25" height="auto">或者点按手柄x按钮，弹出VR中的菜单，实现VR的功能交互：
 ![MENU](images/menu.png)
 
 ### Loading PDB
@@ -132,10 +135,14 @@ Menu的颜色的菜单，可以根据`元素（Element）`、`残基（Residue�
 
 
 ### 投影
+
+### Pico 4 Ultra
+在VR设备中，选择投屏按钮，根据提示，即可投屏（推荐）
+
+### Oculus Quest
 要将 Oculus Quest 的画面投屏到电脑上，可以通过 ADB 工具和 scrcpy 实现。以下是详细步骤：
 
 ###  1.准备工作
-
 确保 Oculus Quest 设备和电脑连接在同一个 Wi-Fi 网络下。
 
 确保 Oculus Quest 已开启「开发者模式」和「USB 调试」功能。
@@ -183,6 +190,8 @@ scrcpy -m 1024 --bit-rate 2M --max-fps 30 --no-control
 --max-fps 30：限制最大帧率为 30 FPS
 
 --no-control：仅投屏，不控制设备
+
+
 
 
 Citation
