@@ -54,6 +54,12 @@ conda install -c conda-forge pymol-open-source
 
 ## Quickstart
 ```
+
+# 注册/登录账号
+https://HOST:PORT/  exp； https://127.0.0.1:9098/
+# 上传PDB文件
+https://127.0.0.1:9098/dashboard 【在电脑端上传】
+
 # 脚本启动
 ./run.sh  [CONDA-ENV]  [HOST]  [PORT]
 
@@ -61,10 +67,21 @@ conda install -c conda-forge pymol-open-source
 cd server
 example: 
 uvicorn app:app --reload --host 0.0.0.0 --port 9098 --ssl-keyfile server.key --ssl-certfile server.crt
-```
-使用头盔直接访问 ip_address
 
-功能:
+# 使用头盔直接访问 ip_address
+
+# 注册/登录账号
+https://HOST:PORT/  exp； https://127.0.0.1:9098/
+
+# 上传PDB文件
+https://HOST:PORT/dashboard 【在电脑端上传】 exp：https://127.0.0.1:9098/dashboard
+上传PDB后，可以在VR菜单的Load中加载PDB文件
+
+# 访问vr
+https://HOST:PORT/vr exp：https://127.0.0.1:9098/vr
+```
+
+
 
 
 ## Citation
