@@ -54,9 +54,11 @@ conda install -c conda-forge pymol-open-source
 
 ## Quickstart
 ```
-cd server
-uvicorn app:app --host ip_address --port port
+# 脚本启动
+./run.sh  [CONDA-ENV]  [HOST]  [PORT]
 
+# 命令启动
+cd server
 example: 
 uvicorn app:app --reload --host 0.0.0.0 --port 9098 --ssl-keyfile server.key --ssl-certfile server.crt
 ```
