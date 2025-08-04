@@ -675,7 +675,7 @@ function createMenuButton(group) {
     // });
     // Structure
     number += 1;
-    let structure = buttonFactory.createButton(df.DEFBUTTON, {
+    let structure1 = buttonFactory.createButton(df.DEFBUTTON, {
         text: "Show structure",
         position: new THREE.Vector3(x, y + (-number * (df.textMenuHeight + df.letterSpacing)), z),
         label: "structure",
