@@ -138,7 +138,7 @@ https://127.0.0.1:9098/vr
 
 ### Loading PDB
 
-点击`Menu`菜单中的`load PDB`按钮，加载PDB。PDB文件需提前放至`client/static/data`目录下, PDB ID会在点击`load PDB`
+点击`Menu`菜单中的`load PDB`按钮，加载PDB。PDB文件需提前上传, PDB ID会在点击`load`
 后，显示出来。选择目标PDB ID，加载PDB。
 
 其中：
