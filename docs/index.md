@@ -129,12 +129,12 @@ https://127.0.0.1:9098/vr
 例如Google Chrome、Microsoft Edge、Firefox Reality等。
 
 点击屏幕上`ENTER VR`按钮，进入VR模式。如图：
-![ENTER VR](images/img.png)
+![登入.png](images/%E7%99%BB%E5%85%A5.png)
 
 ### VR Menu
 
 点击VR屏幕中的<img src="images/cate.png" alt="Cate" width="25" height="auto">或者点按手柄x按钮，弹出VR中的菜单，实现VR的功能交互：
-![MENU](images/menu.png)
+![菜单.png](images/%E8%8F%9C%E5%8D%95.png)
 
 ### Loading PDB
 
