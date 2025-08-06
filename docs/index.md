@@ -73,7 +73,7 @@ https://HOST:PORT/dashboard
 ```
 
 在页面中选择并上传需要的 .pdb 文件。
-
+![上传pdb.png](images/%E4%B8%8A%E4%BC%A0pdb.png)
 上传完成后，这些文件即可在 VR 菜单「Load」列表中看到并加载。
 
 ## 4. VR 访问
