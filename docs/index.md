@@ -31,16 +31,61 @@ ProVR 是一个基于 Three.js 开发的先进蛋白质设计工具，旨在为�
 
 Quick Start
 ===========
-
-
-## Running ProVR
-
-### Quickstart
+## Requirements
+环境安装
+```
+git clone https://github.com/DanFienne/ProVR.git
+pip install "fastapi[standard]"
+# openmm
+conda install -c conda-forge openmm
+conda install -c conda-forge pdbfixer
+conda install -c conda-forge pymol-open-source
+```
+## 1. 启动后端服务
+### 方式一：使用脚本
+```
+./run.sh  [CONDA_ENV]  [HOST]  [PORT]
+# 例
+./run.sh  mol-env   0.0.0.0   9098
+```
+### 方式二：使用命令行
 ```
 cd ProVR/server
-uvicorn app:app --host ip_address --port port
+
+uvicorn app:app \
+    --reload \
+    --host 0.0.0.0 \
+    --port 9098 \
+    --ssl-keyfile server.key \
+    --ssl-certfile server.crt
 ```
-使用VR头盔直接访问 ip_address
+## 2. 账号注册 / 登录
+在浏览器中访问主页（默认端口 9098；以下以本地部署为例）
+```
+https://127.0.0.1:9098/
+```
+![登录.png](images/%E7%99%BB%E5%BD%95.png)
+'若部署在其他主机或端口，将 127.0.0.1:9098 替换为实际的 HOST:PORT。
+## 3. 上传 PDB 文件（桌面端）
+登录后访问 Dashboard：
+```
+https://HOST:PORT/dashboard
+```
+
+在页面中选择并上传需要的 .pdb 文件。
+
+上传完成后，这些文件即可在 VR 菜单「Load」列表中看到并加载。
+
+## 4. VR 访问
+戴上头显，在头显自带浏览器中直接访问：
+```
+https://HOST:PORT/vr
+```
+示例（本地部署）：
+```
+https://127.0.0.1:9098/vr
+```
+
 
 ### Implement
 
