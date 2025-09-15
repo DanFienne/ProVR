@@ -182,7 +182,44 @@ df.drawer = {
     //     df.GROUP[pdbId][type][chain].add(mesh);
     // },
     drawStick: function (pdbId, type, chain, start, end, radius, color, atom) {
+        function createGradientTexture({
+                                           width = 128,
+                                           height = 16,
+                                           stops = [
+                                               {offset: 0.0, color: '#ff0000'},
+                                               // {offset: 0.5, color: '#00ff00'},
+                                               {offset: 1.0, color: '#0000ff'},
+                                           ],
+                                           horizontal = true, // true: 水平渐变; false: 垂直渐变
+                                       } = {}) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            const grad = horizontal
+                ? ctx.createLinearGradient(0, 0, width, 0)
+                : ctx.createLinearGradient(0, 0, 0, height);
+
+            stops.forEach(s => grad.addColorStop(s.offset, s.color));
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        // 2) 创建材质，使用 map 贴图代替 color
+        const gradientTex = createGradientTexture({
+            horizontal: false,
+        });
+
+
         let distance = start.distanceTo(end);
+
         let geometry = new THREE.CylinderGeometry(
             radius,
             radius,
@@ -191,7 +228,8 @@ df.drawer = {
             1,
             false);
         let material = new THREE.MeshLambertMaterial({
-            color: color,
+            color: 0xffffff,
+            map: gradientTex,
             // wireframe: false
         });
         geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, distance / 2, 0));

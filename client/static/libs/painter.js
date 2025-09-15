@@ -417,6 +417,26 @@ df.painter = {
         let preResidue = w3m.mol[pdbId].residueData[chainId][residueKeys[resInd - 1]];
 
         switch (type) {
+            case 'DNA':
+                let ws = df.config.stick_sphere_w;
+                if (w3m.mol[pdbId].residueData[chainId][residueKeys[resInd - 1]] === undefined) {
+                    df.drawer.drawSphere(pdbId, 'main', caAtom.chainName, path[0], caAtom.color, radius, caAtom, ws);
+                    df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].visible = true;
+                    df.GROUP[pdbId]['main'][caAtom.chainName].children[df.GROUP[pdbId]['main'][caAtom.chainName].children.length - 1].ssc = type;
+                }
+                if (preResidue !== undefined && residueKeys[resInd - 1] !== undefined) {
+                    if (customCompare(residueKeys[resInd - 1], resId) === -1) {
+                        path = [preResidue.path[preResidue.path.length - 1]].concat(path);
+                    }
+                }
+
+                if (residue.dnaStick) {
+                    let endAtom = df.tool.getMainAtom(pdbId, residue.dnaStick[0][1].id);
+                    df.drawer.drawStick(pdbId, 'main', endAtom.chainName, residue.dnaStick[0][0].xyz, endAtom.posCentered, radius, endAtom.color, endAtom);
+                    df.GROUP[pdbId]['main'][endAtom.chainName].children[df.GROUP[pdbId]['main'][endAtom.chainName].children.length - 1].visible = true;
+
+                }
+                break;
             case 'FOOT':
                 path = path.slice((path.length / 2) - 1, path.length);
                 break;
@@ -539,6 +559,7 @@ df.painter = {
     },
     showCartoonSSEByResidue: function (pdbId, chainId, resId) {
         let residue = w3m.mol[pdbId].residueData[chainId][resId];
+        console.log("residue", residue);
         switch (residue.sse) {
             case w3m.HELIX_HEAD:
                 this.showTubeByResidue(pdbId, chainId, resId, residue, 'HEAD');
@@ -570,6 +591,9 @@ df.painter = {
                 break;
             case w3m.LOOP_FOOT: //loop-->tube
                 this.showTubeByResidue(pdbId, chainId, resId, residue, 'BODY');
+                break;
+            case w3m.LOOP: //loop-->tube
+                this.showTubeByResidue(pdbId, chainId, resId, residue, 'DNA');
                 break;
         }
     },

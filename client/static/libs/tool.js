@@ -201,7 +201,7 @@ df.tool = {
         let center = totalBox.getCenter(new THREE.Vector3());
         console.log(center)
         // distance
-        let distance = 0.5;
+        let distance = 0.1;
         let cameraPosition = new THREE.Vector3(center.x - camera.position.x, center.y - camera.position.y, center.z - camera.position.z + distance);
         // canon.position.set(cameraPosition.x - camera.position.x, cameraPosition.y - camera.position.y, cameraPosition.z - camera.position.z + distance)
         df.tool.smoothMoveObject(canon.position, cameraPosition, canon);

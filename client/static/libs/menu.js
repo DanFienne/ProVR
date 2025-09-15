@@ -268,7 +268,7 @@ df.actionManager = {
         df.actionManager.closeMenu();
         df.config.mainMode = df.BALL_AND_ROD;
         df.w3m.config.color_mode_main = 607;
-        df.scale = 0.5;
+        df.scale = 0.01;
 
         // let url = window.location.href + 'diffuse';
         // let data = {
@@ -420,11 +420,13 @@ df.actionManager = {
     loadFileAction: function (param) {
         // df.tool.clearTools(2);
         df.isScore = false;
+        param = param.toLowerCase()
         df.loader.load(param, 'name', function () {
             Promise.all([
                 df.controller.drawGeometry(df.config.mainMode, param),
-                df.controller.drawGeometry(df.config.hetMode, param)
+                // df.controller.drawGeometry(df.config.hetMode, param)
             ]).then(() => {
+                console.log("aaa", param)
                 df.SelectedPDBId = param;
                 df.scale = 0.012;
                 let list = []
@@ -558,6 +560,7 @@ function createLoadPDBButton(x, y, z, parentButton) {
             if (df.pdbObjects.includes(text)) {
                 continue
             }
+            text = text.split(".")[0];
             // x = x + df.lineSpacing;
             let button = buttonFactory.createButton(df.DEFBUTTON, {
                 text: text,

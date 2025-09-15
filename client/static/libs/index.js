@@ -124,36 +124,7 @@ const loader = new OBJLoader();
 //     df.controller.drawGeometry(df.config.hetMode, 'fab3');
 // });
 //
-// df.loader.load('fab4', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'fab4');
-//     // df.controller.drawGeometry(df.config.hetMode, 'par5');
-//     loader.load(
-//         'static/css/model.obj',
-//         (object) => {
-//             df.GROUP['fab4']['main'].A.add(object);
-//             console.log('pos', object.position)
-//             const worldBox = new THREE.Box3().setFromObject(object);
-//             const worldBox1 = new THREE.Box3().setFromObject(df.GROUP['fab4']['main'].A.children[0]);
-//             const sourceWorldCenter1 = new THREE.Vector3();
-//             worldBox.getCenter(sourceWorldCenter1);
-//             const sourceWorldCenter2 = new THREE.Vector3();
-//             worldBox1.getCenter(sourceWorldCenter2);
-//             console.log('cen1', sourceWorldCenter1, "cen2", sourceWorldCenter2)
-//             const pos1 = sourceWorldCenter2.sub(sourceWorldCenter1)
-//             object.position.copy(pos1);
-//             object.updateWorldMatrix(true, true);
-//             console.log(object.position)
-//             // object.scale.set(0.02, 0.02, 0.02);
-//         },
-//         (xhr) => {
-//             console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-//         },
-//         (error) => {
-//             console.error(error);
-//         }
-//     );
-//
-// });
+
 
 
 // 假设 df 是全局对象，包含 loader, controller, config 等
@@ -171,19 +142,27 @@ for (let i = 100; i >= 1; i--) {
 // 依次显示每个结构
 
 
-// df.loader.load('4oqw', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, '4oqw');
-// df.controller.drawGeometry(df.config.hetMode, '4ulh');
+df.loader.load('test', 'name', function () {
+    df.controller.drawGeometry(df.config.mainMode, 'test');
+    df.controller.drawGeometry(df.config.hetMode, 'test');
+});
+// df.loader.load('lxdb', 'name', function () {
+//     df.controller.drawGeometry(df.config.mainMode, 'lxdb');
+//     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
 // });
-// df.loader.load('4ulb', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, '4ulb');
+// df.loader.load('tes1', 'name', function () {
+//     df.controller.drawGeometry(df.config.mainMode, 'tes1');
 //     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
 // });
 // df.loader.load('tes2', 'name', function () {
 //     df.controller.drawGeometry(df.config.mainMode, 'tes2');
-//     df.controller.drawGeometry(df.config.hetMode, 'tes2');
+//     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
 // });
 
+// df.loader.load('A19_4', 'name', function () {
+//     df.controller.drawGeometry(df.config.mainMode, 'A19_4');
+//     df.controller.drawGeometry(df.config.hetMode, 'A19_4');
+// });
 
 //
 // function normalizeGroup(group) {

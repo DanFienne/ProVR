@@ -980,11 +980,96 @@ w3m.tool = {
             }
         }
     },
+    fillMainAsDNA: function (mol_id, chain_id, start, stop) {
+        var mol = w3m.mol[mol_id];
+        console.log(w3m.mol)
+        console.log(mol_id)
+        var chain = mol.tree.main[chain_id];
+        // part
+        var part = w3m_split_by_undefined(chain, start, stop),
+            chain_first = w3m_find_first(chain),
+            chain_last = w3m_find_last(chain);
+        for (var i = 0, l = part.length; i < l; i++) {
+            var path = [],
+                frame = [],
+                part_start = part[i][0],
+                part_stop = part[i][1];
+            // isolated
+            if (part_start == part_stop) {
+                var residue = chain[part_start],
+                    represent = part_start == chain_first ? w3m.structure.residue.nucleic_acid_5_end_replace :
+                        w3m.structure.residue.nucleic_acid;
+                if (!w3m_isset(residue[represent])) {
+                    continue;
+                }
+                continue;
+            }
+            // continuous
+            for (var ii = part_start; ii <= part_stop; ii++) {
+                var structure = ii == chain_first ? w3m.structure.residue.nucleic_acid_5_end_replace :
+                    w3m.structure.residue.nucleic_acid;
+                var residue = chain[ii];
+                w3m_isset(residue[structure]) ? path.push(mol.getMain(residue[structure])) : void (0);
+                ii == chain_last && w3m_isset(residue[w3m.structure.residue.nucleic_acid_3_end_push]) ?
+                    path.push(mol.getMain(residue[w3m.structure.residue.nucleic_acid_3_end_push])) :
+                    void (0);
+            }
+
+            this.smoothFrame(path, frame, mol_id);
+            /* base */
+            var seg = w3m.config.smooth_segment % 2 ? w3m.config.smooth_segment + 1 : w3m.config.smooth_segment,
+                offset = 0;
+            for (var ii = part_start; ii <= part_stop; ii++) {
+                if (!w3m.structure.normal[mol.residue[chain_id][ii]]) {
+                    continue;
+                }
+                var residue = chain[ii],
+                    residue_name = mol.residue[chain_id][ii],
+                    normal_index = seg * offset + seg / 2,
+                    normal_token_1 = residue[w3m.structure.normal[residue_name][0]],
+                    normal_token_2 = residue[w3m.structure.normal[residue_name][1]];
+                // var atom = w3m.tool.getMainAtomById(w3m.global.mol,id);
+
+
+                if (normal_token_1 && normal_token_2) {
+                    // normal
+                    var normal_info_1 = mol.getMain(normal_token_1),
+                        normal_info_2 = mol.getMain(normal_token_2),
+                        end_mode = w3m.config.geom_tube_round_end ? w3m.END_OS : w3m.END_OX;
+                    // fix
+                    if (frame[normal_index]) {
+                        normal_info_1[0] = frame[normal_index][0];
+                        normal_info_1[1] = frame[normal_index][1];
+                        if (w3m.CLENGTH == 2) {
+                            var residueData = w3m.mol[mol_id].residueData[chain_id][ii];
+                            if (residueData.dnaStick == undefined) {
+                                residueData.dnaStick = [];
+                            }
+                            var startPoint = {
+                                id: normal_token_1,
+                                xyz: new THREE.Vector3(normal_info_1[1][0], normal_info_1[1][1], normal_info_1[1][2]),
+                            };
+                            var endPoint = {
+                                id: normal_token_2,
+                                xyz: new THREE.Vector3(normal_info_2[1][0], normal_info_2[1][1], normal_info_2[1][2]),
+                            };
+                            residueData.dnaStick.push([startPoint, endPoint]);
+                        }
+                    }
+                }
+                offset++;
+            }
+        }
+
+    },
 
     // sheet & arrow
     fillMainAsCartoon: function (mol_id, chain_id, start, stop) {
         let mol = w3m.mol[mol_id];
         if (mol.chain[chain_id] !== w3m.CHAIN_AA) {
+            w3m.CLENGTH = 2;
+            this.fillMainAsDNA(mol_id, chain_id, start, stop)
+            w3m.CLENGTH = 0;
             return;
         }
         let chain = mol.tree.main[chain_id];
@@ -1401,10 +1486,56 @@ w3m.tool = {
             ];
         }
     },
+    smoothFrame: function (path, frame, mol_id) {
+        //console.log("smoothFrame:");
+        var compute_NB = w3m_isset(compute_NB) ? compute_NB : true,
+            n = w3m.config.smooth_segment % 2 ? w3m.config.smooth_segment + 1 : w3m.config.smooth_segment,
+            k = w3m.config.smooth_curvature,
+            len = path.length;
+        if (len == 0) {
+            return;
+        }
+        /* xyz, color & tan */
+        // 0
+        path[0][3] = math.polysum([k, -k / 4], [vec3.point(path[0][1], path[1][1]), vec3.point(path[0][1], path[2][1])]);
+        frame[0] = [path[0][0], path[0][1], path[0][2], vec3.unit(path[0][3])];
+        // 1 -> len-1
+        for (var i = 1; i < len; i++) {
+            // tan
+            if (i == len - 1) {
+                path[i][3] = math.polysum([k, -k / 4], [vec3.point(path[i - 1][1], path[i][1]), vec3.point(path[i - 2][1], path[i][1])]);
+            } else {
+                path[i][3] = vec3.scalar(k, vec3.point(path[i - 1][1], path[i + 1][1]));
+            }
+            // curve
+            var curve = math.hermiteFit(n, path[i - 1][1], path[i][1], path[i - 1][3], path[i][3]),
+                id = path[i - 1][0],
+                color = path[i - 1][2];
+            for (var ii = 1; ii <= n; ii++) {
+                var xyz = curve[ii][0],
+                    tan = vec3.unit(curve[ii][1]);
+                frame.push([id, xyz, color, tan]);
+                if (ii == n / 2) {
+                    id = path[i][0]; // switch id
+                    color = path[i][2]; // switch color
+                    frame.push([id, xyz, color, tan]);
+                }
+                if (w3m.CLENGTH == 2) {
+                    var atom = w3m.tool.getMainAtomById(mol_id, id);
+                    // if (PDB.residue && PDB.residue != "") {
+                    //     atom = w3m.tool.getMainAtomById(PDB.residue, id);
+                    // }
+                    if (atom) {
+                        w3m.mol[mol_id].residueData[atom.chainname][atom.resid].path.push(new THREE.Vector3(xyz[0], xyz[1], xyz[2]));
+                    }
+
+                }
+            }
+        }
+    },
 
     naturalFrame: function (path, frame, mol_id) {
         // path -> all atoms
-        let offset = df.GeoCenterOffset;
         // 平滑段数, 首9, 尾11, 全长20
         let n = w3m.config.smooth_segment % 2 ?
             w3m.config.smooth_segment + 1 : w3m.config.smooth_segment;
