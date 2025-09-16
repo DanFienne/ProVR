@@ -53,7 +53,7 @@ git clone https://github.com/DanFienne/ProVR.git
 python <= 3.12
 pip install "fastapi[standard]"
 
-
+pip install -r requirements.txt
 
 # openmm
 conda install -c conda-forge openmm
