@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
     <title>Sign in</title>
-
     <style>
         :root {
             --btn-h: 48px;
@@ -13,9 +12,9 @@
             --dur: .25s;
             --border: #E0E0E0;
             --shadow: 0 6px 18px rgba(0, 0, 0, .12);
+            --brand: #1c1c1e;
         }
 
-        /* Reset -------------------------------------------------------*/
         * {
             box-sizing: border-box;
             margin: 0;
@@ -34,34 +33,32 @@
             color: #1c1c1e;
         }
 
-        /* Card --------------------------------------------------------*/
         .card {
-            width: min(400px, 90%);
-            padding: 40px 32px 32px;
+            width: min(420px, 92%);
+            padding: 40px 32px 28px;
             border-radius: var(--radius-xl);
             background: rgba(255, 255, 255, .8);
             border: 1px solid rgba(0, 0, 0, .05);
             backdrop-filter: blur(20px) saturate(120%);
             box-shadow: var(--shadow);
             text-align: center;
+            animation: fade .4s ease;
         }
 
         .card h1 {
             font-size: clamp(1.5rem, 4vw, 2rem);
             font-weight: 600;
-            margin-bottom: 28px
+            margin-bottom: 24px
         }
 
-        /* Button group ----------------------------------------------*/
         .btn-group {
             display: flex;
             flex-direction: column;
             gap: 12px
         }
 
-        /* Button base -----------------------------------------------*/
         .btn {
-            position: relative; /* 让图标可绝对定位 */
+            position: relative;
             width: 100%;
             height: var(--btn-h);
             border-radius: var(--radius-lg);
@@ -79,17 +76,15 @@
             will-change: transform;
         }
 
-        /* 图标：固定 22×22，放在左侧 20px 处 ------------------------*/
         .btn img {
             width: 22px;
             height: 22px;
             position: absolute;
-            left: 20px; /* 所有按钮左侧对齐 */
+            left: 20px;
             top: 50%;
             transform: translateY(-50%);
         }
 
-        /* Hover / active --------------------------------------------*/
         @media (hover: hover) {
             .btn:hover {
                 transform: translateY(-2px);
@@ -102,8 +97,78 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, .1)
         }
 
+        .hr {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+            color: #888;
+            font-size: .9rem
+        }
+
+        .hr::before, .hr::after {
+            content: "";
+            height: 1px;
+            flex: 1;
+            background: #e9e9e9
+        }
+
+        .toggle {
+            margin-top: 8px;
+            font-size: .9rem;
+            color: #3b82f6;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .local {
+            margin-top: 14px;
+            text-align: left;
+            display: none;
+            animation: slide .25s ease;
+        }
+
+        .local.active {
+            display: block;
+        }
+
+        .local label {
+            display: block;
+            margin: 8px 0 6px;
+            font-size: .9rem;
+            color: #333
+        }
+
+        .local input {
+            width: 100%;
+            padding: .7rem .9rem;
+            border-radius: 12px;
+            border: 1px solid #E0E0E0;
+            background: #fff;
+            font-size: .95rem;
+        }
+
+        .local button {
+            width: 100%;
+            margin-top: 12px;
+            height: 44px;
+            border: none;
+            border-radius: 12px;
+            background: var(--brand);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #err {
+            color: #d33;
+            min-height: 22px;
+            margin-top: 8px;
+            text-align: center
+        }
+
         footer {
-            margin-top: 24px;
+            margin-top: 18px;
             font-size: .75rem;
             color: #6d6d6f
         }
@@ -112,36 +177,111 @@
             color: inherit;
             text-decoration: underline
         }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @keyframes slide {
+            from {
+                opacity: .5;
+                transform: translateY(-6px)
+            }
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
     </style>
 </head>
-
 <body>
 <main class="card" role="main">
     <h1>Sign in ProVR</h1>
 
+    <!-- 三方登录按钮（默认显示） -->
     <div class="btn-group">
-        <!-- GitHub -->
         <a class="btn" href="/login/github">
-            <img src="{{ url_for('static', path='imgs/github.svg') }}" alt="GitHub">
+            <img src="/static/imgs/github.svg" alt="GitHub">
             Continue with GitHub
         </a>
-
-        <!-- Google -->
         <a class="btn" href="/login/google">
-            <img src="{{ url_for('static', path='imgs/google.svg') }}" alt="Google">
+            <img src="/static/imgs/google.svg" alt="Google">
             Continue with Google
         </a>
-
-        <!-- Apple -->
-        <a class="btn" href="/login/apple">
-            <img src="{{ url_for('static', path='imgs/apple.svg') }}" alt="Apple">
-            Continue with Apple
+        <a class="btn" href="/login/wechat">
+            <img src="/static/imgs/wechat.svg" alt="WeChat">
+            Continue with WeChat
         </a>
+    </div>
+
+    <div class="hr">or</div>
+
+    <!-- 切换按钮：可展开/收起“用户名密码登录” -->
+    <div class="toggle" id="toggleLocal">Sign in with username</div>
+
+    <!-- 本地账号登录表单（默认隐藏，按需启用） -->
+    <div class="local" id="localBox">
+        <label>用户名</label>
+        <input id="u" autocomplete="username">
+        <label>密码</label>
+        <input id="p" type="password" autocomplete="current-password">
+        <button id="localLogin">登录</button>
+        <div id="err"></div>
     </div>
 
     <footer>
         Problem signing in? <a class="ext" href="#">Get help</a>
     </footer>
 </main>
+
+<script>
+    // 展开/收起本地登录
+    const toggle = document.getElementById("toggleLocal");
+    const box = document.getElementById("localBox");
+    let open = false;
+    toggle.onclick = () => {
+        open = !open;
+        box.classList.toggle("active", open);
+        toggle.textContent = open ? "Hide username" : "Sign in with username";
+    };
+
+    // 本地账号登录（仅在用户选择该方式时）
+    document.getElementById("localLogin").onclick = async () => {
+        const u = document.getElementById("u").value.trim();
+        const p = document.getElementById("p").value;
+        const fd = new FormData();
+        fd.append("username", u);
+        fd.append("password", p);
+        const res = await fetch("/api/login", {method: "POST", body: fd});
+        const j = await res.json();
+        if (!res.ok) {
+            document.getElementById("err").textContent = j.detail || "登录失败";
+            return;
+        }
+        localStorage.token = j.token;
+        location.href = "/vr";
+    };
+
+    // 若回调把 token 携带在 URL（hash 或 query），在此处同步存储后跳转
+    (function syncTokenFromUrl() {
+        const m = location.hash.match(/access_token=([^&]+)/) || location.search.match(/[?&]access_token=([^&]+)/);
+        if (m) {
+            try {
+                localStorage.token = decodeURIComponent(m[1]);
+                location.hash = "";
+                location.search = "";
+                location.href = "/vr";
+            } catch (e) {
+            }
+        }
+    })();
+</script>
 </body>
 </html>

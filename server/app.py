@@ -1,7 +1,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse, PlainTextResponse
 from items import HDock, Design, Energy, FilePath
 from alignment import pymol_align_global
 from dssp import get_ss_from_pymol
@@ -11,11 +11,15 @@ import subprocess
 import tempfile
 import config
 import httpx
+import secrets
+import urllib.parse
+
+from logConf import *
 
 from jose import jwt, JWTError
 from passlib.hash import bcrypt
 from sqlalchemy import (
-    create_engine, Column, Integer, String, DateTime, ForeignKey
+    create_engine, Column, Integer, String, DateTime, ForeignKey, UniqueConstraint
 )
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 
@@ -46,7 +50,7 @@ dfire_model = DFIRE()
 @app.post("/dfire")
 async def h_dock(response: Energy):
     pdb_str = response.pdb_string
-    pdb_str = pdb_str.split("\n");
+    pdb_str = pdb_str.split("\n")
     energy = dfire_model.calc_energy(pdb_str)
     score = "{:.3f}".format(energy)
     return JSONResponse(content=score)
@@ -215,7 +219,6 @@ async def diffuse(request: Design):
     model_count = 0
     in_model = False
 
-
     for line in lines:
         if line.startswith("MODEL"):
             in_model = True
@@ -280,7 +283,7 @@ async def diffuse(request: Design):
 
 # denglu
 # ────────────────────── 配置 ──────────────────────
-JWT_SECRET = "CHANGE_ME"  # 生产环境请放到环境变量
+JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME")  # 生产环境请放到环境变量
 JWT_ALGO = "HS256"
 TOKEN_EXPIRES_MIN = 60 * 24 * 7  # 7 天
 
@@ -300,6 +303,22 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     files = relationship("PDBFile", back_populates="owner")
+    providers = relationship("UserProvider", back_populates="user")
+
+
+# 新增：第三方绑定
+class UserProvider(Base):
+    __tablename__ = "user_providers"
+    id = Column(Integer, primary_key=True)
+    provider = Column(String, nullable=False)  # github / google / wechat
+    provider_uid = Column(String, nullable=False)  # GitHub id / Google sub / 微信 openid
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="providers")
+    __table_args__ = (UniqueConstraint('provider', 'provider_uid', name='_provider_uid_uc'),)
+
+
+Base.metadata.create_all(engine)
+app.mount("/user-files", StaticFiles(directory=UPLOAD_ROOT), name="user-files")
 
 
 class PDBFile(Base):
@@ -424,7 +443,7 @@ def api_delete_pdb(filename: str = Query(...), user: User = Depends(current_user
 
 # ─────────────────── 页面路由 ───────────────────
 @app.get("/", response_class=HTMLResponse)  # 登录 / 注册
-def page_index():     return HTML_INDEX
+def page_index(request: Request):     return templates.TemplateResponse("1.html", {"request": request})
 
 
 @app.get("/dashboard", response_class=HTMLResponse)  # 上传面板
@@ -500,8 +519,6 @@ form.onsubmit=async e=>{
 if(localStorage.token)location.href="/vr";
 </script>
 """
-
-# ─────────────────── Dashboard / 上传页 ───────────────────
 HTML_DASHBOARD = """<!doctype html><html lang="zh-CN"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PDB Manager • Dashboard</title>
@@ -528,6 +545,26 @@ button.del:hover{opacity:.75}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 </style>
 <header><h1>PDB Manager</h1><button id="logout">退出登录</button></header>
+
+<script>
+// 同步回调 token，并做登录守卫
+(function syncTokenAndGuard(){
+  // 接收 #access_token 或 ?access_token
+  const m = location.hash.match(/access_token=([^&]+)/) || location.search.match(/[?&]access_token=([^&]+)/);
+  if (m) {
+    try {
+      localStorage.token = decodeURIComponent(m[1]);
+      // 清理地址栏，避免泄露
+      history.replaceState(null, "", location.pathname);
+    } catch(e) {}
+  }
+  // 未登录则回到登录页，带 next 回来
+  if (!localStorage.token) {
+    location.href = "/?next=" + encodeURIComponent(location.pathname);
+  }
+})();
+</script>
+
 <main>
   <section class="card">
     <h2>上传新的 PDB 文件</h2>
@@ -543,7 +580,8 @@ button.del:hover{opacity:.75}
 if(!localStorage.token)location.href="/";
 const hdr={"Authorization":"Bearer "+localStorage.token};
 function parseJwt(t){return JSON.parse(atob(t.split('.')[1]));}
-const uid=parseJwt(localStorage.token).uid;
+let uid="me";
+try{ uid=parseJwt(localStorage.token).uid; }catch(e){ uid="me"; }
 const list=document.getElementById("fileList"),msg=document.getElementById("msg");
 async function load(){const r=await fetch("/api/my-files",{headers:hdr});
   if(!r.ok){localStorage.removeItem("token");location.href="/";return}
@@ -575,3 +613,209 @@ document.getElementById("uploadForm").onsubmit=async e=>{
  msg.style.color="green";msg.textContent="上传成功！";fileInput.value="";load();};
 logout.onclick=()=>{localStorage.removeItem("token");location.href="/";}
 </script>"""
+
+# WeChat 网站扫码登录
+WECHAT_APP_ID = os.getenv("WECHAT_APP_ID", "")
+WECHAT_APP_SECRET = os.getenv("WECHAT_APP_SECRET", "")
+WECHAT_QR_AUTH_URL = "https://open.weixin.qq.com/connect/qrconnect"
+WECHAT_TOKEN_URL = "https://api.weixin.qq.com/sns/oauth2/access_token"
+# --- state 防 CSRF（演示使用内存；生产可用 Redis，并定时清理过期） ---
+STATE_STORE = {}
+
+
+def issue_state():
+    s = secrets.token_urlsafe(24)
+    STATE_STORE[s] = {"ts": datetime.datetime.utcnow().timestamp()}
+    return s
+
+
+# 绑定/登录并签发 JWT
+from jose import jwt
+
+
+def login_or_create_user_by_provider(db: Session, provider: str, provider_uid: str,
+                                     default_name: Optional[str] = None) -> str:
+    link = db.query(UserProvider).filter_by(provider=provider, provider_uid=provider_uid).first()
+    if link:
+        uid = link.user_id
+    else:
+        base_name = default_name or f"{provider}_{provider_uid}"
+        name = base_name;
+        i = 1
+        while db.query(User).filter_by(username=name).first():
+            i += 1;
+            name = f"{base_name}_{i}"
+        user = User(username=name, password=bcrypt.hash(secrets.token_urlsafe(16)))
+        db.add(user);
+        db.commit();
+        db.refresh(user)
+        db.add(UserProvider(provider=provider, provider_uid=provider_uid, user_id=user.id))
+        db.commit()
+        uid = user.id
+        (UPLOAD_ROOT / str(uid)).mkdir(exist_ok=True)
+    return create_token({"uid": uid})
+
+
+STATE_STORE = {}  # {state: {"next": "/vr", "ts": 123456}}
+
+
+def issue_state(next_path: str = "/vr"):
+    s = secrets.token_urlsafe(24)
+    STATE_STORE[s] = {"next": next_path, "ts": datetime.datetime.utcnow().timestamp()}
+    return s
+
+
+# ---------- GitHub ----------
+@app.get("/login/github")
+def login_github():
+    state = issue_state()
+    params = {
+        "client_id": GITHUB_CLIENT_ID,
+        "redirect_uri": f"{OAUTH_REDIRECT_BASE}/auth/github/callback",
+        "scope": "read:user user:email",
+        "state": state,
+        "allow_signup": "true",
+    }
+    return RedirectResponse(f"{GITHUB_AUTH_URL}?{urllib.parse.urlencode(params)}")
+
+
+@app.get("/auth/github/callback")
+async def github_callback(code: str = Query(None), state: str = Query(None), db: Session = Depends(db_session)):
+    if not code or not state or state not in STATE_STORE:
+        return PlainTextResponse("Invalid state or code", status_code=400)
+    meta = STATE_STORE.pop(state, {})
+    next_path = meta.get("next", "/vr")
+    async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
+        token_res = await client.post(GITHUB_TOKEN_URL, data={
+            "client_id": GITHUB_CLIENT_ID,
+            "client_secret": GITHUB_CLIENT_SECRET,
+            "code": code,
+            "redirect_uri": f"{OAUTH_REDIRECT_BASE}/auth/github/callback",
+            "state": state
+        })
+        token_res.raise_for_status()
+        tk = token_res.json()
+        access_token = tk.get("access_token")
+    if not access_token:
+        return PlainTextResponse("Failed to get access_token", status_code=400)
+    async with httpx.AsyncClient(headers={"Authorization": f"Bearer {access_token}",
+                                          "Accept": "application/json"}) as client:
+        ures = await client.get(GITHUB_USER_URL)
+        ures.raise_for_status()
+        uinfo = ures.json()
+    provider_uid = str(uinfo.get("id"))
+    default_name = uinfo.get("login") or f"github_{provider_uid}"
+    token = login_or_create_user_by_provider(db, "github", provider_uid, default_name)
+
+    # resp = RedirectResponse(url=next_path)
+    # set_session_cookie(resp, {"uid": token})
+    # return resp
+    return RedirectResponse(f"{next_path}#access_token={urllib.parse.quote(token)}")
+
+
+# ---------------- 会话（服务端 Session via 签名 Cookie） ----------------
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+
+SESSION_SECRET = os.getenv("SESSION_SECRET", "CHANGE_ME_TO_A_LONG_RANDOM_STRING")
+SESSION_COOKIE_NAME = "sessionid"
+SESSION_MAX_AGE = 60 * 60 * 24 * 7  # 7 天
+serializer = URLSafeTimedSerializer(SESSION_SECRET, salt="session")
+
+
+def set_session_cookie(resp, data: dict):
+    # data 示例：{"uid": 123}
+    token = serializer.dumps(data)
+    resp.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=SESSION_MAX_AGE,
+        httponly=True,
+        secure=False if os.getenv("ENV") == "dev" else True,  # 本地调试可设 False，生产必须 True 且启用 HTTPS
+        samesite="Lax",
+        path="/"
+    )
+
+
+# ---------- Google ----------
+@app.get("/login/google")
+def login_google():
+    state = issue_state()
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": f"{OAUTH_REDIRECT_BASE}/auth/google/callback",
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    return RedirectResponse(f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}")
+
+
+@app.get("/auth/google/callback")
+async def google_callback(code: str = Query(None), state: str = Query(None), db: Session = Depends(db_session)):
+    if not code or not state or state not in STATE_STORE:
+        return PlainTextResponse("Invalid state or code", status_code=400)
+    STATE_STORE.pop(state, None)
+    async with httpx.AsyncClient() as client:
+        tres = await client.post(GOOGLE_TOKEN_URL, data={
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": f"{OAUTH_REDIRECT_BASE}/auth/google/callback",
+            "grant_type": "authorization_code"
+        }, headers={"Content-Type": "application/x-www-form-urlencoded"})
+        tres.raise_for_status()
+        tdata = tres.json()
+        access_token = tdata.get("access_token")
+        id_token = tdata.get("id_token")
+    if not access_token and not id_token:
+        return PlainTextResponse("Failed to get token", status_code=400)
+    async with httpx.AsyncClient(headers={"Authorization": f"Bearer {access_token}"}) as client:
+        ures = await client.get(GOOGLE_USERINFO_URL)
+        ures.raise_for_status()
+        uinfo = ures.json()
+    provider_uid = uinfo.get("sub")
+    default_name = (uinfo.get("email") or uinfo.get("name") or f"google_{provider_uid}").split("@")[0]
+    token = login_or_create_user_by_provider(db, "google", provider_uid, default_name)
+    return RedirectResponse(f"/vr#access_token={urllib.parse.quote(token)}")
+
+
+# ---------- WeChat 网站扫码 ----------
+@app.get("/login/wechat")
+def login_wechat():
+    state = issue_state()
+    params = {
+        "appid": os.getenv("WECHAT_APP_ID", ""),
+        "redirect_uri": f"{OAUTH_REDIRECT_BASE}/auth/wechat/callback",
+        "response_type": "code",
+        "scope": "snsapi_login",
+        "state": state
+    }
+    return RedirectResponse(f"{WECHAT_QR_AUTH_URL}?{urllib.parse.urlencode(params)}#wechat_redirect")
+
+
+@app.get("/auth/wechat/callback")
+async def wechat_callback(code: str = Query(None), state: str = Query(None), db: Session = Depends(db_session)):
+    if not code or not state or state not in STATE_STORE:
+        return PlainTextResponse("Invalid state or code", status_code=400)
+    STATE_STORE.pop(state, None)
+    async with httpx.AsyncClient() as client:
+        token_res = await client.get("https://api.weixin.qq.com/sns/oauth2/access_token", params={
+            "appid": os.getenv("WECHAT_APP_ID", ""),
+            "secret": os.getenv("WECHAT_APP_SECRET", ""),
+            "code": code,
+            "grant_type": "authorization_code"
+        })
+        token_res.raise_for_status()
+        tk = token_res.json()
+        if "errcode" in tk and tk["errcode"] != 0:
+            return PlainTextResponse(f"WeChat token error: {tk}", status_code=400)
+        access_token = tk.get("access_token")
+        openid = tk.get("openid")
+    if not access_token or not openid:
+        return PlainTextResponse("Failed to get access_token/openid", status_code=400)
+    provider_uid = openid
+    default_name = f"wx_{openid[:8]}"
+    token = login_or_create_user_by_provider(db, "wechat", provider_uid, default_name)
+    return RedirectResponse(f"/vr#access_token={urllib.parse.quote(token)}")
