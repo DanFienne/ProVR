@@ -36,6 +36,10 @@ Quick Start
 ```
 git clone https://github.com/DanFienne/ProVR.git
 pip install "fastapi[standard]"
+
+# login
+pip install -r requirements.txt
+
 # openmm
 conda install -c conda-forge openmm
 conda install -c conda-forge pdbfixer
