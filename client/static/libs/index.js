@@ -108,8 +108,6 @@ const loader = new OBJLoader();
 //
 //
 
-//
-
 
 // df.loader.load('fab1', 'name', function () {
 //     df.controller.drawGeometry(df.config.mainMode, 'fab1');
@@ -126,7 +124,6 @@ const loader = new OBJLoader();
 //
 
 
-
 // 假设 df 是全局对象，包含 loader, controller, config 等
 // 每个 PDB 的几何体将存储在一个对象中
 // pdbObjects = {};
@@ -140,31 +137,12 @@ for (let i = 100; i >= 1; i--) {
 // loadAllPDBs();
 
 // 依次显示每个结构
-
-
 df.loader.load('test', 'name', function () {
     df.controller.drawGeometry(df.config.mainMode, 'test');
     df.controller.drawGeometry(df.config.hetMode, 'test');
 });
-// df.loader.load('lxdb', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'lxdb');
-//     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
-// });
-// df.loader.load('tes1', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'tes1');
-//     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
-// });
-// df.loader.load('tes2', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'tes2');
-//     // df.controller.drawGeometry(df.config.hetMode, '4ulh');
-// });
 
-// df.loader.load('A19_4', 'name', function () {
-//     df.controller.drawGeometry(df.config.mainMode, 'A19_4');
-//     df.controller.drawGeometry(df.config.hetMode, 'A19_4');
-// });
 
-//
 // function normalizeGroup(group) {
 //     // 计算 Group 的边界盒
 //     const groupBox = new THREE.Box3().setFromObject(group);

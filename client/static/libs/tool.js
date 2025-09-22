@@ -180,33 +180,90 @@ df.tool = {
             return atom.id;
         }
     },
-    vrCameraZoom: function () {
 
-    },
     vrCameraCenter: function (canon, camera, list) {
+        // 创建一个变量用于存储整体包围盒
         let totalBox;
+
+        // 如果 list 是数组，计算所有对象的联合包围盒
         if (Array.isArray(list)) {
+            // 如果空数组则无需处理
             if (list.length === 0) return;
-            // object.position.copy(camera.position);
+
+            // 以第一个对象初始化包围盒
             totalBox = new THREE.Box3().setFromObject(list[0]);
-            //
+
+            // 迭代其余对象并并集包围盒
             for (let i = 1; i < list.length; i++) {
-                const box = new THREE.Box3().setFromObject(list[i]);
-                totalBox.union(box);
+                const box = new THREE.Box3().setFromObject(list[i]); // 获取单个对象的包围盒
+                totalBox.union(box); // 合并到总包围盒
             }
         } else {
+            // 如果是单个对象，直接从其创建包围盒
             totalBox = new THREE.Box3().setFromObject(list);
-
         }
-        let center = totalBox.getCenter(new THREE.Vector3());
-        console.log(center)
-        // distance
-        let distance = 0.1;
-        let cameraPosition = new THREE.Vector3(center.x - camera.position.x, center.y - camera.position.y, center.z - camera.position.z + distance);
-        // canon.position.set(cameraPosition.x - camera.position.x, cameraPosition.y - camera.position.y, cameraPosition.z - camera.position.z + distance)
-        df.tool.smoothMoveObject(canon.position, cameraPosition, canon);
-        // canon.lookAt(camera);
+
+        // 计算包围盒中心点（世界坐标）
+        const center = totalBox.getCenter(new THREE.Vector3()); // 目标组群中心
+        // console.log(center); // 可调试查看中心点
+
+        // 计算 camera 与 canon 的世界坐标（确保使用世界坐标，避免父子层级影响）
+        const cameraWorldPos = new THREE.Vector3(); // 用于存储相机世界位置
+        camera.getWorldPosition(cameraWorldPos); // 读取相机世界位置
+
+        const canonWorldPos = new THREE.Vector3(); // 用于存储炮台世界位置
+        canon.getWorldPosition(canonWorldPos); // 读取炮台世界位置
+
+        // 计算相机相对于炮台的固定偏移（世界空间下）
+        const camOffsetFromCanon = new THREE.Vector3().subVectors(cameraWorldPos, canonWorldPos); // offset = camWorld - canonWorld
+
+        // 你希望相机到达的目标位置：在目标中心附近，沿相机朝向或固定轴偏移一点距离
+        // 这里按你原先的思路，在 z 方向添加一个微小距离（可按实际相机朝向改进）
+        const distance = 0.1; // 让相机略微靠近/远离中心的距离
+        const targetCamPos = new THREE.Vector3(center.x, center.y, center.z + distance); // 期望的相机世界位置
+
+        // 由目标相机位置与相对偏移，反推出 canon 的目标世界位置
+        const targetCanonWorldPos = new THREE.Vector3().subVectors(targetCamPos, camOffsetFromCanon); // canonTarget = camTarget - offset
+
+        // 如果 canon 有父节点，需要把世界坐标转换为父节点的本地坐标
+        let targetCanonLocalPos = targetCanonWorldPos.clone(); // 先复制一份作为目标本地坐标
+        if (canon.parent) {
+            // 如果存在父对象，则将世界坐标转换到父对象的本地坐标系
+            canon.parent.worldToLocal(targetCanonLocalPos); // 世界转父本地
+        }
+
+        // 使用平滑移动函数，将 canon 的 position 从当前值移动到目标本地位置
+        df.tool.smoothMoveObject(canon.position.clone(), targetCanonLocalPos.clone(), canon); // 传入起点与终点
+
+        // 可选：让 canon 朝向目标中心（如有需求可开启）
+        // canon.lookAt(center); // 使炮台朝向目标中心
     },
+
+    // vrCameraCenter: function (canon, camera, list) {
+    //     let totalBox;
+    //     if (Array.isArray(list)) {
+    //         if (list.length === 0) return;
+    //         // object.position.copy(camera.position);
+    //         totalBox = new THREE.Box3().setFromObject(list[0]);
+    //         //
+    //         for (let i = 1; i < list.length; i++) {
+    //             const box = new THREE.Box3().setFromObject(list[i]);
+    //             totalBox.union(box);
+    //         }
+    //     } else {
+    //         totalBox = new THREE.Box3().setFromObject(list);
+    //
+    //     }
+    //     let center = totalBox.getCenter(new THREE.Vector3());
+    //
+    //
+    //     // distance
+    //     let distance = 0.1;
+    //     let cameraPosition = new THREE.Vector3(center.x - camera.position.x, center.y - camera.position.y, center.z - camera.position.z + distance);
+    //     // canon.position.set(cameraPosition.x - camera.position.x, cameraPosition.y - camera.position.y, cameraPosition.z - camera.position.z + distance)
+    //     df.tool.smoothMoveObject(canon.position, cameraPosition, canon);
+    //     // canon.lookAt(camera);
+    // },
 
     // vrCameraCenter: function (canon, camera, list) {
     //     // 1. 构造一个数组，方便统一处理
@@ -250,7 +307,7 @@ df.tool = {
     // },
 
     smoothMoveObject: function (stPos, edPos, object) {
-        let duration = 1000;
+        let duration = 300;
         let startTime = performance.now();
 
         function animate(time) {
@@ -266,6 +323,7 @@ df.tool = {
         // 启动动画循环
         renderer.xr.getSession().requestAnimationFrame(animate);
     },
+
     initPDBView: function (pdbId) {
         for (let key in df.GROUP[pdbId]['main']) {
             let group = df.GROUP[pdbId]['main'][key];
@@ -550,5 +608,25 @@ df.tool = {
         df.pdbId = [];
         df.pdbText = {}
         df.pdbContent = {}
+    },
+    openMenuOnceInFront: function () {
+        const menuDistance = 1.2;
+        const menuYOffset = -0.1;
+        camera.updateMatrixWorld(true);
+        // 相机世界位置与朝向
+        const camWorldPos = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);
+        const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+
+        // 计算目标世界位置：相机前方 + Y 偏移
+        const targetPos = new THREE.Vector3().copy(camWorldPos).addScaledVector(camForward, menuDistance);
+        targetPos.y += menuYOffset;
+        df.GROUP['menu'].position.copy(targetPos);
+        df.GROUP['menu'].lookAt(camWorldPos);
+        df.GROUP['menu'].visible = true;
+        df.showMenu = true;
+    },
+    closeMenu: function () {
+        df.showMenu = false;
+        df.GROUP['menu'].visible = false;
     },
 }

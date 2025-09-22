@@ -82,11 +82,12 @@ df.dfRender = {
             df.GROUP[gName] = new THREE.Group();
             df.GROUP[gName].danfeng = 1
             df.GROUP[gName].name = gName;
-            if (gName === 'menu') {
-                camera.add(df.GROUP[gName]);
-            } else {
-                scene.add(df.GROUP[gName]);
-            }
+            // if (gName === 'menu') {
+            //     canon.add(df.GROUP[gName]);
+            // } else {
+            //     scene.add(df.GROUP[gName]);
+            // }
+            scene.add(df.GROUP[gName]);
         }
     },
     initRender: function () {
@@ -194,7 +195,6 @@ df.dfRender = {
                 }
             }
             df.tool.vrCameraCenter(canon, camera, list);
-
             isImmersive = true;
         });
         renderer.xr.addEventListener('sessionend', () => {
@@ -436,8 +436,11 @@ df.dfRender = {
                             // 处理A键（如 buttons[0]），用于菜单显示/隐藏
                             const aBtn = gp.buttons[4];
                             if (aBtn.pressed && !aBtn._prev) {
-                                df.showMenu = !df.showMenu;
-                                df.GROUP['menu'].visible = df.showMenu;
+                                if (df.GROUP['menu'].visible) {
+                                    df.tool.closeMenu();
+                                } else {
+                                    df.tool.openMenuOnceInFront();
+                                }
                             }
                             aBtn._prev = aBtn.pressed;
                         }
