@@ -137,9 +137,9 @@ for (let i = 100; i >= 1; i--) {
 // loadAllPDBs();
 
 // 依次显示每个结构
-df.loader.load('test', 'name', function () {
-    df.controller.drawGeometry(df.config.mainMode, 'test');
-    df.controller.drawGeometry(df.config.hetMode, 'test');
+df.loader.load('7bej', 'name', function () {
+    df.controller.drawGeometry(df.config.mainMode, '7bej');
+    df.controller.drawGeometry(df.config.hetMode, '7bej');
 });
 
 
